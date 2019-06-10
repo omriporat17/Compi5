@@ -1,0 +1,469 @@
+%{
+	#include "SymbolTable.hpp"
+	#include "output.hpp"
+	#include <iostream>
+	#include <cstdlib>
+	#include <cassert>
+	using namespace std;
+	using namespace output;
+
+	extern int yylex();
+
+	extern int yylineno;
+
+	void yyerror(const char *);
+
+	symbolTable* scopes = new symbolTable();
+
+	bool canBeAssignedBool(types t1, types t2){
+		return (t1 == t2 || (t1 == IntType && t2 == ByteType));
+	}
+
+	void inline canBeAssigned(types t1, types t2){
+		bool b = canBeAssignedBool(t1,t2);
+		if(!b){
+			output::errorMismatch(scopes->lineNum);
+			exit(0);
+		}
+	}
+
+
+%}
+
+%token VOID
+%token INT
+%token BYTE
+%token B
+%token BOOL
+
+
+
+%token TRUE
+%token FALSE
+%token RETURN
+%token IF
+%token ELSE
+%token WHILE
+%token BREAK
+%token CONTINUE
+%token PRECOND
+%token SC
+%token COMMA
+%token LBRACE
+%token RBRACE
+%token ID
+%token NUM
+%token STRING
+
+%right ASSIGN
+%left OR
+%left AND
+%nonassoc RELOP
+%left BINOPPM
+%left BINOPMD
+%right NOT
+%left LPAREN
+%left RPAREN
+
+
+%%
+Program: Funcs{
+		scopes->existsMain();
+}
+;
+
+Funcs: /*epsilon*/{}
+|	FuncDecl  Funcs{
+
+}
+;
+
+
+FuncDecl: FuncDeclFirst PreConditions FuncDeclSecond { scopes->popScope(); }
+;
+
+
+FuncDeclFirst: RetType ID LPAREN Formals RPAREN
+{
+	scopes->addFunction(typeToString($1.type), $2.str, $4.func_info, $$.lineNum, true);
+	$$.type = $1.type;
+	$$.lineNum = $1.lineNum;
+}
+;
+
+FuncDeclSecond: LBRACE Statements RBRACE {
+		$$.lineNum = $2.lineNum;
+}
+;
+
+RetType: Type { $$ = $1; }
+
+	| VOID { $$.type = VoidType; }
+;
+
+Formals: FormalsList {
+	scopes->lineNum = $1.lineNum;
+	$$.func_info = $1.func_info;
+}
+
+	| /*epsilon*/ {$$ = StackType(); }
+;
+
+FormalsList: FormalDecl {
+
+	$$.func_info.insert($$.func_info.begin(), TypedVar($1.str, typeToString($1.type), $1.lineNum));
+	scopes->lineNum = $1.lineNum;
+	$$.lineNum = $1.lineNum;
+}
+	| FormalDecl COMMA FormalsList {
+
+			$$.func_info = $3.func_info;
+			$$.func_info.insert($$.func_info.begin(),TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+			scopes->lineNum = $1.lineNum;
+			$$.lineNum = $1.lineNum;
+}
+;
+
+
+FormalDecl: Type ID {
+
+	$$.type = $1.type;
+	$$.str = $2.str;
+	$$.lineNum = $2.lineNum;
+	scopes->lineNum = $2.lineNum;
+}
+;
+
+
+PreConditions: PreConditions PreCondition{}
+	| /*epsilon*/
+
+//TODO: FAQ about preconditions with vars or functions
+PreCondition: PRECOND LPAREN Exp RPAREN{
+
+		$$ = $3;
+		scopes->lineNum = $3.lineNum;
+		if(!isTypesEqual(typeToString($3.type), "BOOL")){
+			output::errorMismatch($$.lineNum);
+		}
+		scopes->isPreCondLegal($3.func_info);
+		scopes->scopes.back()->incPreconditions();
+	}
+;
+
+Statements: Statement{
+
+	$$.lineNum = $1.lineNum;
+	scopes->lineNum = $$.lineNum;
+}
+
+	| Statements Statement{
+
+		$$.lineNum = $2.lineNum;
+		scopes->lineNum = $$.lineNum;
+	}
+;
+
+StartScope:  /*epsilon*/ {
+
+		$$ = StackType();
+	 	scopes->addScope();
+	}
+;
+
+StartWhileScope: /*epsilon*/ {
+
+	scopes->addWhile();
+}
+;
+
+
+Statement: StartScope LBRACE Statements RBRACE {
+
+	scopes->popScope();
+	$$.lineNum = $2.lineNum;
+	}
+
+	| Type ID SC
+	{
+
+		scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+		$$.lineNum = $1.lineNum;
+	}
+
+	| Type ID ASSIGN Exp SC
+	{
+		canBeAssigned($1.type, $4.type);
+		scopes->lineNum = $1.lineNum;
+		scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+	}
+
+
+	| ID ASSIGN Exp SC
+	{
+		canBeAssigned($1.type, $3.type);
+		scopes->lineNum = $1.lineNum;
+		scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+	}
+
+
+	| Call SC {
+
+		$$.lineNum = $2.lineNum;
+		scopes->lineNum = $$.lineNum;
+	}
+
+	| RETURN SC {
+
+		$$.lineNum = $1.lineNum;
+		scopes->lineNum = $$.lineNum;
+		scopes->checkReturn(typeToString(VoidType), $$.lineNum);
+	}
+
+	| RETURN Exp SC {
+
+		$$.lineNum = $1.lineNum;
+		scopes->lineNum = $$.lineNum;
+		scopes->checkReturn(typeToString($2.type), $$.lineNum);
+	}
+
+	| IfScope %prec IF {
+
+
+	}
+
+	| IfScope ElseScope {
+
+
+	}
+
+	| StartWhileScope WHILE LPAREN Exp RPAREN Statement {
+
+		scopes->popScope();
+		if ($4.type != BoolType) {
+			output::errorMismatch($2.lineNum);
+			exit(0);
+		}
+	}
+
+	| BREAK SC
+	{
+
+		scopes->isBreakAllowed($1.lineNum);
+	}
+	| CONTINUE SC
+	{
+
+		scopes->isContinueAllowed($1.lineNum);
+	}
+;
+IfScope: StartScope IF LPAREN Exp RPAREN {
+
+		scopes->popScope();
+		$$.lineNum = $2.lineNum;
+		scopes->lineNum = $2.lineNum;
+		if ($4.type != BoolType) {
+			output::errorMismatch($2.lineNum);
+			exit(0);
+		}
+	}
+;
+
+
+ElseScope: ELSE StartScope Statement {
+
+	scopes->popScope();
+	$$.lineNum = $3.lineNum;
+	scopes->lineNum = $$.lineNum;
+}
+;
+
+
+Call: ID LPAREN ExpList RPAREN {
+
+		$$.str = $1.str;
+		scopes->callFunction($1.str, $3.func_info, $1.lineNum);
+	}
+
+	| ID LPAREN RPAREN {
+
+		$$.str = $1.str;
+		vector<TypedVar> t;
+		scopes->callFunction($1.str, t, $1.lineNum);
+	}
+;
+
+
+ExpList: Exp {
+
+		$$ = $1;
+		$$.func_info.insert($$.func_info.begin(), TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+	}
+
+	| Exp COMMA ExpList{
+
+		$$ = $1;
+		$$.func_info = $3.func_info;
+		$$.func_info.insert($$.func_info.begin(), TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+	}
+;
+
+
+Type: INT {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| BYTE {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| BOOL {  $$ = $1; scopes->lineNum = $$.lineNum; }
+;
+
+Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
+
+	| Exp BINOPPM Exp {
+
+		$$.lineNum = $1.lineNum;
+		if (($1.type != IntType && $1.type != ByteType) || ($3.type != IntType && $3.type != ByteType)) {
+			output::errorMismatch($2.lineNum);
+			exit(0);
+		}
+		if ($1.type == IntType || $3.type == IntType) {
+			$$.type = IntType;
+		} else {
+			$$.type = ByteType;
+		}
+	}
+	//TODO: what happens when mixin int and byte
+	| Exp BINOPMD Exp {
+
+		$$.lineNum = $1.lineNum;
+		if (($1.type != IntType && $1.type != ByteType) || ($3.type != IntType && $3.type != ByteType)) {
+			output::errorMismatch($2.lineNum);
+			exit(0);
+		}
+		if ($1.type == IntType || $3.type == IntType) {
+			$$.type = IntType;
+		} else {
+			$$.type = ByteType;
+		}
+	}
+
+	| ID {
+
+		$$.str = $1.str;
+		$$.lineNum = $1.lineNum;
+		// Check if function
+		if (scopes->getFunction($1.str) != NULL) {
+			$$.type = stringToType((scopes->getFunction($1.str))->getType());
+		}
+		// Check if variable
+		else if (scopes->getVariable($1.str) != NULL) {
+			$$.type = stringToType((scopes->getVariable($1.str))->getType());
+		}
+		else {
+			errorUndef($$.lineNum, $$.str);
+			exit(0);
+		}
+	}
+
+	| Call {
+
+		$$ = $1;
+		scopes->lineNum = $1.lineNum;
+		FunctionEntry* func_entry = scopes->getFunction($$.str);///why is this?
+	 }
+
+	| Num {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| STRING {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| TRUE {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| FALSE {  $$ = $1; scopes->lineNum = $$.lineNum; }
+
+	| NOT Exp {
+
+		if ($2.type != BoolType) {
+			output::errorMismatch($2.lineNum);
+			exit(0);
+		}
+		$$.type = BoolType;
+		$$.lineNum = $2.lineNum;
+	}
+
+	| Exp AND Exp {
+
+		if ($1.type != BoolType) {
+			output::errorMismatch($1.lineNum);
+			exit(0);
+		}
+		if ($3.type != BoolType) {
+			output::errorMismatch($3.lineNum);
+			exit(0);
+		}
+		$$.lineNum = $1.lineNum;
+		$$.type = BoolType;
+	}
+
+	| Exp OR Exp {
+
+		if ($1.type != BoolType) {
+			output::errorMismatch($1.lineNum);
+			exit(0);
+		}
+		if ($3.type != BoolType) {
+			output::errorMismatch($3.lineNum);
+			exit(0);
+		}
+		$$.lineNum = $1.lineNum;
+		$$.type = BoolType;
+	}
+
+	| Exp RELOP Exp {
+
+		if (($1.type != IntType && $1.type != ByteType)||($3.type != IntType && $3.type != ByteType)) {
+			//both must be numbers
+			output::errorMismatch($1.lineNum);
+			exit(0);
+		}
+		$$.lineNum = $1.lineNum;
+		$$.type = BoolType;
+	}
+;
+
+
+Num: NUM {
+
+	$$ = $1;
+	scopes->lineNum = $1.lineNum;
+	}
+
+	| NUM B
+	{
+
+		$$ = $1;
+		$$.type = ByteType;
+		int n = atoi($$.str.c_str());
+		if(n < 0 || n > 255){
+			errorByteTooLarge(scopes->lineNum, $$.str);
+			exit(0);
+		}
+		$$.lineNum = scopes->lineNum = $1.lineNum;
+	}
+;
+
+
+%%
+
+int main()
+{
+	yyparse();
+	scopes->popScope();
+	delete scopes;
+	return 0;
+}
+
+void yyerror(const char *)
+{
+	//errorSyn(scopes->lineNum);
+	errorSyn(yylineno);
+	exit(0);
+}
