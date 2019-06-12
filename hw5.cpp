@@ -5,12 +5,12 @@
 //
 #include "hw5.hpp"
 
-
 //TODO: take care to preconditions too....
 
-void allocVar(StackType stackType=StackType())
+
+void allocVar(StackType stackType)
 {
-    registers register1=stackType.reg;
+    reg register1=stackType.reg;
     CodeBuffer::instance().emit("subu $sp,$sp,4");
     if(stackType.type==UndefinedType)
     {
@@ -19,7 +19,7 @@ void allocVar(StackType stackType=StackType())
     }
     if(register1==noRegister)
     {
-        register1=register_alloc.loadImmToReg(stackType.str);
+        register1=Registers::loadImmToReg(stackType.str);
     }
     ostringstream ostringstream1;
     ostringstream1<<"sw"<<reg_to_string(register1)<<", $(sp)";
@@ -30,7 +30,7 @@ void allocVar(StackType stackType=StackType())
 void assignToVar(int offset, StackType stackType)
 {
     ostringstream ostringstream1;
-    registers register1=stackType.reg;
+    reg register1=stackType.reg;
     if(register1==noRegister)
     {
         register1=Registers::loadImmToReg(stackType.str);
@@ -38,10 +38,10 @@ void assignToVar(int offset, StackType stackType)
     CodeBuffer::instance().emit(ostringstream1.str());
     register_alloc.freeRegister(register1);
 }
-registers ari_op(ari_op op, StackType stackType1, StackType stackType3)
+reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
 {
-    registers register1=stackType1.reg;
-    registers register3=stackType3.reg;
+    reg register1=stackType1.reg;
+    reg register3=stackType3.reg;
     string reg1_str=stackType1.str;
     string reg3_str=stackType3.str;
     if(register1==noRegister)
@@ -68,25 +68,25 @@ registers ari_op(ari_op op, StackType stackType1, StackType stackType3)
     register_alloc.freeRegister(register3);
     return register1;
 }
-registers loadRegister(VariableEntry* variableEntry)
+reg loadRegister(VariableEntry* variableEntry)
 {
-    registers register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc.RegisterAlloc();
     ostringstream ostringstream1;
     int offset=(variableEntry->getOffset())*(-1);
     ostringstream1<<"lw"<<reg_to_string(register1)<<", "<<offset<< "($fp)";
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
-registers loadImmidiate(string number)
+reg loadImmidiate(string number)
 {
-    registers register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc.RegisterAlloc();
     ostringstream ostringstream1;
     ostringstream1<<"li"<<reg_to_string(register1)<<", "<< register_alloc.boolImmToStr(number);
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
 
-void logRelop(const string& relop, registers register1, registers register2, vector<int>& true_list, vector<int>& false_list)
+void logRelop(const string& relop, reg register1, reg register2, vector<int>& true_list, vector<int>& false_list)
 {
     string rop="";
 
@@ -114,7 +114,7 @@ void logRelop(const string& relop, registers register1, registers register2, vec
         rop="bgt ";
     }
     true_list=CodeBuffer::instance().makelist(CodeBuffer::instance().emit(rop+reg_to_string(register1)+ ", " + reg_to_string(register2) + ", "));
-    false_list=CodeBuffer::instance().(CodeBuffer::instance().emit("j "));
+    false_list=CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 
 
 }
@@ -147,7 +147,7 @@ void callReturnFunc()
     CodeBuffer::instance().emit("move $sp, $fp");
     CodeBuffer::instance().emit("jr $ra");
 }
-void addRegisterToFunc(registers register1)
+void addRegisterToFunc(reg register1)
 {
     CodeBuffer::instance().emit("subu $sp,$sp,4");
     CodeBuffer::instance().emit("sw" + reg_to_string(register1)+", ($sp)");
@@ -184,7 +184,7 @@ void returnValueFromFunc(StackType stackType)
 void addImmToFunc(string imm_value)
 {
     CodeBuffer::instance().emit("subu $sp, $sp, 4");
-    registers register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc.RegisterAlloc();
     ostringstream ostringstream1;
     string imm_val=register_alloc.boolImmToStr(imm_value);
     if(imm_val[imm_val.size()-1] =='b')
@@ -204,9 +204,9 @@ void retFromFunc(StackType stackType)
     CodeBuffer::instance().emit("addu $sp, $sp, 8");
     Registers::removeUsedRegistersFromStack();
 }
-registers createString(string string1)
+reg createString(string string1)
 {
-    registers register1 = register_alloc.RegisterAlloc();
+    reg register1 = register_alloc.RegisterAlloc();
     static int counter = 0;
     ostringstream ostringstream1;
     ostringstream1 << "string_label" << counter++;
@@ -216,7 +216,7 @@ registers createString(string string1)
     CodeBuffer::instance().emit("la " + reg_to_string(register1) + ", " + str_label);
     return register1;
 }
-registers callFunc(string func_name, StackType stackType=StackType())
+reg callFunc(string func_name, StackType stackType)
 {
     int size=0;
    // vector<TypedVar> parameters=stackType.func_info;
@@ -226,7 +226,7 @@ registers callFunc(string func_name, StackType stackType=StackType())
     CodeBuffer::instance().emit("sw $fp, 4($sp)");
     if(func_name=="print")
     {
-        registers register1= createString(stackType.str);
+        reg register1= createString(stackType.str);
         stackType.reg=register1;
         allocVar(stackType);
         register_alloc.freeRegister(register1);
@@ -239,7 +239,7 @@ registers callFunc(string func_name, StackType stackType=StackType())
     {
         for(int i=stackType.func_info.size();i>=0; i--)
         {
-            VariableEntry* variableEntry=scopes.getVariable(stackType.func_info[i].Id);
+            VariableEntry* variableEntry=SymbolTable1->getVariable(stackType.func_info[i].Id);
             if(stackType.func_info[i].reg== noRegister)
             {
                 addRegisterToFunc(stackType.func_info[i].reg);
@@ -260,8 +260,8 @@ registers callFunc(string func_name, StackType stackType=StackType())
 
         CodeBuffer::instance().emit("jal __" + func_name);
 
-        registers register1 = noRegister;
-        FunctionEntry* func_entry = scopes->getFunction(func_name);
+        reg register1 = noRegister;
+        FunctionEntry* func_entry = SymbolTable1->getFunction(func_name);
         assert(func_entry != NULL);
 
         stringstream ostream;

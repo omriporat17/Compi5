@@ -1,4 +1,3 @@
-
 #ifndef HW3_SYMBOLTABLE_HPP
 #define HW3_SYMBOLTABLE_HPP
 #include "output.hpp"
@@ -10,10 +9,6 @@ using std::string;
 using std::vector;
 using namespace output;
 template <class T>
-
-
-
-//TODO: from the reference, maybe we need to add fixStack and getVariableWeight ????
 void clearVectorOfPointers(vector<T>& v){
     for (typename vector<T>::iterator it = v.begin(); it != v.end(); ++it){
         delete (*it);
@@ -139,11 +134,12 @@ public:
     Scope(){}
     ~Scope() {
         output::endScope();
+        ///CHANGE: REMOVED IF FROM INSIDE FOR TO OUTSIDE FOR
+        if(isFuncScope){
+            string s = func_name;
+            printPreconditions(s, precond_num);
+        }
         for (vector<TableEntry*>::iterator it = this->entries.begin(); it != this->entries.end(); ++it) {
-            if(isFuncScope){
-                string s = func_name;
-                printPreconditions(s, precond_num);
-            }
             (*it)->print();
         }
         clearVectorOfPointers(this->entries);
@@ -215,7 +211,7 @@ private:
     Scope *global;          ///global scope
     bool mainExists;
 
-    Scope *newScope(bool isWhile, bool initOffset = false, bool isFunc = false) {
+    Scope *newScope(bool isWhile, bool initOffset = false, bool isFunc= false) {
         if (initOffset) {
             this->scopes.push_back(new Scope(0, isWhile, false, isFunc));
         } else {
@@ -225,26 +221,26 @@ private:
     }
 
 public:
-    symbolTable() {
-        this->lineNum = 1;
-        this->mainExists = false;
-        this->global = new Scope(0, false, true);
+    symbolTable()
+    {
+        this->lineNum=1;
+        this->mainExists=false;
+        this->global= new Scope(0,false,true);
         this->scopes.push_back(this->global);
         vector<TypedVar> print_arguments;
         print_arguments.push_back(TypedVar("", typeToString(StringType)));
         vector<TypedVar> printi_arguments;
         printi_arguments.push_back(TypedVar("", typeToString(IntType)));
 
-        this->addFunction(typeToString(VoidType), string("print"), print_arguments, this->lineNum, false);
-        this->addFunction(typeToString(VoidType), string("printi"), printi_arguments, this->lineNum, false);
+        this->addFunction(typeToString(VoidType),string("print"),print_arguments,this->lineNum, false);
+        this->addFunction(typeToString(VoidType),string("printi"),printi_arguments,this->lineNum, false);
 
     }
 
-    ~symbolTable() {
+    ~symbolTable()
+    {
         clearVectorOfPointers(this->scopes);
     }
-
-
 
     //TODO: remove this is for DEBUGGING
     /*void print_func(){
@@ -253,103 +249,126 @@ public:
 
 
 //    The following functions are scope-related functions (i.e. create a new scope)
-    void addFunction(string retval, string id, vector<TypedVar> formals, int lineno, bool addScope) {
-        this->lineNum = lineno;
-        int argOffset = 0;
+    void addFunction(string retval, string id, vector<TypedVar> formals, int lineno, bool addScope)
+    {
+        this->lineNum=lineno;
+        int argOffset=0;
 
-        if (this->existsId(id)) {
-            output::errorDef(this->lineNum, id);
+        if(this->existsId(id))
+        {
+            output::errorDef(this->lineNum,id);
             exit(0);
         }
-        if (id.compare("main") == 0 && retval.compare(typeToString(VoidType)) == 0 && formals.empty()) {
-            this->mainExists = true;
+        if(id.compare("main")==0 && retval.compare(typeToString(VoidType))==0 && formals.empty())
+        {
+            this->mainExists=true;
         }
-        FunctionEntry *fun = new FunctionEntry(formals, id, retval);
+        FunctionEntry* fun = new FunctionEntry(formals, id, retval);
         this->scopes.back()->addEntry(fun);
-        if (addScope) {
+        if(addScope)
+        {
             Scope *func_scope = newScope(false, true, true);
             func_scope->set_func_name(id);
-            for (vector<TypedVar>::iterator iterator1 = formals.begin(); iterator1 != formals.end(); iterator1++) {
-                argOffset = argOffset - getVariableSize(iterator1.operator*().Type);
-                this->addFunctionArgument(iterator1.operator*().Type, iterator1.operator*().Id, argOffset,
-                                          iterator1.operator*().lineNum);
+            for(vector<TypedVar>::iterator iterator1=formals.begin(); iterator1!=formals.end();iterator1++)
+            {
+                argOffset=argOffset-getVariableSize(iterator1.operator*().Type);
+                this->addFunctionArgument(iterator1.operator*().Type,iterator1.operator*().Id,argOffset,iterator1.operator*().lineNum);
             }
         }
         //print_func();
     }
 
-    void addWhile() {
-        this->newScope(true, false);
+    void addWhile()
+    {
+        this->newScope(true,false);
     }
 
-    void addIf() {
-        this->newScope(false, false);
+    void addIf()
+    {
+        this->newScope(false,false);
     }
 
-    void addElse() {
-        this->newScope(false, false);
+    void addElse()
+    {
+        this->newScope(false,false);
 
     }
 
-    void addScope() {
-        this->newScope(false, false);
+    void addScope()
+    {
+        this->newScope(false,false);
     }
 
 
-    void popScope() {
-        if (this->scopes.empty()) {
+    void popScope()
+    {
+        if(this->scopes.empty())
+        {
             return;
         }
-        Scope *curr = scopes.back();
-        delete (curr);
+        Scope* curr=scopes.back();
+        delete(curr);
         this->scopes.pop_back();
     }
 
-    void addVariable(string type, string id, int lineno) {
-        if (this->existsId(id))   //we already define this var
+    void addVariable(string type, string id, int lineno)
+    {
+        if(this->existsId(id))   //we already define this var
         {
-            output::errorDef(this->lineNum, id);
+            output::errorDef(this->lineNum,id);
             exit(0);
         }
-        this->scopes.back()->addEntry(new VariableEntry(type, id, this->getOffset()));
+        this->scopes.back()->addEntry(new VariableEntry(type,id,this->getOffset()));
         this->scopes.back()->incrementOffset(1); // each var in the size of 1.
         //print_func();
     }
 
-    void addFunctionArgument(string &type, string &id, int offset, int lineno) {
-        this->lineNum = lineno;
-        if (this->existsId(id)) {
-            output::errorDef(this->lineNum, id);
+    void addFunctionArgument(string &type, string &id, int offset, int lineno)
+    {
+        this->lineNum=lineno;
+        if(this->existsId(id))
+        {
+            output::errorDef(this->lineNum,id);
+            exit(0);
         }
 
-        this->scopes.back()->addEntry(new VariableEntry(type, id, offset));
+        this->scopes.back()->addEntry(new VariableEntry(type,id,offset));
     }
 
-    void addVariable(TypedVar p, int lineno) {
-        this->addVariable(p.Type, p.Id, lineno);
+    void addVariable(TypedVar p, int lineno)
+    {
+        this->addVariable(p.Type,p.Id,lineno);
     }
 
 //    Existence checkers and validation
-    bool existsId(string &id) {
-        for (vector<Scope *>::iterator iterator1 = this->scopes.begin(); iterator1 != this->scopes.end(); iterator1++) {
-            if (iterator1.operator*()->existsId(id)) {
+    bool existsId(string &id)
+    {
+        for(vector<Scope*>::iterator iterator1=this->scopes.begin(); iterator1!=this->scopes.end(); iterator1++)
+        {
+            if(iterator1.operator*()->existsId(id))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    void existsMain() {
-        if (!this->mainExists) {
+    void existsMain()
+    {
+        if(!this->mainExists)
+        {
             output::errorMainMissing();
             exit(0);
         }
     }
 
-    void isBreakAllowed(int lineno) {
-        this->lineNum = lineno;
-        for (vector<Scope *>::iterator iterator1 = this->scopes.begin(); iterator1 != this->scopes.end(); iterator1++) {
-            if (iterator1.operator*()->isWhile()) {
+    void isBreakAllowed(int lineno)
+    {
+        this->lineNum=lineno;
+        for(vector<Scope*>::iterator iterator1=this->scopes.begin();iterator1!=this->scopes.end();iterator1++)
+        {
+            if(iterator1.operator*()->isWhile())
+            {
                 return;
             }
         }
@@ -357,10 +376,13 @@ public:
         exit(0);
     }
 
-    void isContinueAllowed(int lineno) {
-        this->lineNum = lineno;
-        for (vector<Scope *>::iterator iterator1 = this->scopes.begin(); iterator1 != this->scopes.end(); iterator1++) {
-            if (iterator1.operator*()->isWhile()) {
+    void isContinueAllowed(int lineno)
+    {
+        this->lineNum=lineno;
+        for(vector<Scope*>::iterator iterator1=this->scopes.begin();iterator1!=this->scopes.end();iterator1++)
+        {
+            if(iterator1.operator*()->isWhile())
+            {
                 return;
             }
         }
@@ -368,44 +390,55 @@ public:
         exit(0);
     }
 
-    void checkReturn(string type, int lineno) {
-        FunctionEntry *functionEntry = dynamic_cast<FunctionEntry *>(this->global->getLastEntry());
-        assert(functionEntry != NULL);
+    void checkReturn(string type, int lineno)
+    {
+        FunctionEntry* functionEntry= dynamic_cast<FunctionEntry*>(this->global->getLastEntry());
+        assert(functionEntry!=NULL);
         {
-            if (!functionEntry->matchType(type)) {
+            if(!functionEntry->matchType(type))
+            {
                 output::errorMismatch(lineno);
                 exit(0);
             }
         }
     }
 
-    int getOffset() {
-        if (!this->scopes.empty()) {
+    int getOffset()
+    {
+        if(!this->scopes.empty())
+        {
             return this->scopes.back()->getOffset();
         }
         return -1; /// if there is no scope...
     }
 
 
-    TableEntry *getEntry(string &id) {
-        if (!this->scopes.empty()) {
+    TableEntry* getEntry(string &id)
+    {
+        if(!this->scopes.empty())
+        {
             return this->scopes.back()->getEntry(id);
         }
         return NULL;
     }
 
-    FunctionEntry *getFunction(string &id) {
-        if (!this->global) {
+    FunctionEntry* getFunction(string &id)
+    {
+        if(!this->global)
+        {
             return NULL;
         }
-        return (dynamic_cast<FunctionEntry *>(this->global->getEntry(id)));
+        return (dynamic_cast<FunctionEntry*>(this->global->getEntry(id)));
     }
 
-    VariableEntry *getVariable(string &id) {
-        if (!this->scopes.empty()) {
-            for (vector<Scope *>::iterator iterator1 = this->scopes.begin();
-                 iterator1 != this->scopes.end(); iterator1++) {
-                if (iterator1.operator*()->getVariable(id)) {
+    VariableEntry *getVariable(string &id)
+    {
+        if(!this->scopes.empty())
+        {
+            for(vector<Scope*>::iterator iterator1=this->scopes.begin();iterator1!=this->scopes.end();iterator1++)
+            {
+                if(iterator1.operator*()->getVariable(id))
+                {
                     return iterator1.operator*()->getVariable(id);
                 }
             }
@@ -413,32 +446,36 @@ public:
         return NULL;
     }
 
-    int getVariableSize(string &type) {
+    int getVariableSize(string &type)
+    {
         return 1;  /// all the variables in the size of 1
     }
 
-    void callFunction(string &id, vector<TypedVar> &args, int lineno) {
-        this->lineNum = lineno;
-        FunctionEntry *functionEntry = this->getFunction(id);
-        if (!functionEntry) {
-            output::errorUndefFunc(lineno, id);
+    string callFunction(string &id, vector<TypedVar> &args, int lineno)
+    {
+        this->lineNum=lineno;
+        FunctionEntry* functionEntry=this->getFunction(id);
+        if(!functionEntry)
+        {
+            output::errorUndefFunc(lineno,id);
             exit(0);
         }
-        if (!functionEntry->matchArgs(args)) {
+        if(!functionEntry->matchArgs(args))
+        {
             vector<TypedVar> params = functionEntry->getParams();
             vector<string> types;
-            for (vector<TypedVar>::iterator it = params.begin(); it != params.end(); it++) {
+            for(vector<TypedVar>::iterator it = params.begin(); it != params.end(); it++){
                 types.push_back((*it).Type);
             }
-            output::errorPrototypeMismatch(lineno, id, types);
+            output::errorPrototypeMismatch(lineno,id,types);
             exit(0);
         }
-        return;
+        return functionEntry->getType();
     }
 
     void isPreCondLegal(vector<TypedVar> &pre_args) {
-        for (vector<TypedVar>::iterator iterator1 = pre_args.begin(); iterator1 != pre_args.end(); iterator1++) {
-            if (!existsId(iterator1.operator*().Id)) {
+        for(vector<TypedVar>::iterator iterator1=pre_args.begin(); iterator1!=pre_args.end();iterator1++){
+            if(!existsId(iterator1.operator*().Id)){
                 output::errorUndef(iterator1.operator*().lineNum, iterator1.operator*().Id);
                 exit(0);
             }

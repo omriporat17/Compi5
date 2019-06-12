@@ -5,10 +5,21 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
-#include "Registers.hpp"
+
 
 using namespace std;
 ///This is basically a way to connect a variable's name with it's type.
+
+enum ari_op
+{
+    add_op,mul_op,sub_op,div_op
+};
+
+enum reg
+{
+    noRegister, $v0,$t0, $t1, $t2, $t3, $t4, $t5, $t6, $t7, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9
+};
+
 class TypedVar{
 
 public:
@@ -16,12 +27,12 @@ public:
     int lineNum;
     string Id;
     string Type;
-    registers reg;
+    reg reg;
 
 
     ///Methods
     TypedVar(){};
-    TypedVar(string Id, string Type, int lineNum=0):Id(Id),Type(Type),lineNum(lineNum), reg(reg){};
+    TypedVar(string Id, string Type, int lineNum=0):Id(Id),Type(Type),lineNum(lineNum){};
 
     bool operator==(const TypedVar& other) const
     {

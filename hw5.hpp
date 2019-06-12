@@ -5,23 +5,25 @@
 #ifndef COMPI5_HW5_HPP
 #define COMPI5_HW5_HPP
 
+#include "StackStruct.hpp"
 #include "Registers.hpp"
 #include "symbolTable.hpp"
 #include "bp.hpp"
 
+symbolTable* SymbolTable1=NULL;
 
 
 void allocVar(StackType stackType=StackType());
 
 void assignToVar(int offset, StackType stackType);
 
-registers ari_op(ari_op op, StackType stackType1, StackType stackType3);
+reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3);
 
-registers loadRegister(VariableEntry* variableEntry);
+reg loadRegister(VariableEntry* variableEntry);
 
-registers loadImmidiate(string number);
+reg loadImmidiate(string number);
 
-void logRelop(const string& relop, registers register1, registers register2, vector<int>& true_list, vector<int>& false_list);
+void logRelop(const string& relop, reg register1, reg register2, vector<int>& true_list, vector<int>& false_list);
 
 void checkDivisionByZero(StackType stackType);
 
@@ -31,7 +33,7 @@ bool isImmediate(string imm);
 
 void callReturnFunc();
 
-void addRegisterToFunc(registers register1);
+void addRegisterToFunc(reg register1);
 
 void addVarToFunc(string varName);
 
@@ -43,9 +45,9 @@ void addImmToFunc(string imm_val);
 
 void retFromFunc(StackType stackType);
 
-registers createString(string string1);
+reg createString(string string1);
 
-registers callFunc(string func_name, StackType stackType=StackType());
+reg callFunc(string func_name, StackType stackType=StackType());
 
 //void addRegToStack();
 

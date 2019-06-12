@@ -16,23 +16,25 @@
 
 class Registers {
 private:
-    vector<registers> availableRegisters;
-    vector<registers> allRegisters;
+    vector<reg> availableRegisters;
+    vector<reg> usedRegisters;
+    vector<reg> allRegisters;
 
 public:
      Registers();
-    registers RegisterAlloc();
-    void freeRegister(registers register1);
-    vector<registers>& getAvailReg();
-    vector<registers>& getUsedReg();
-    vector<registers>& getAllReg();
+    reg RegisterAlloc();
+    void freeRegister(reg reg1);
+    vector<reg>& getAvailReg();
+    vector<reg>& getUsedReg();
+    vector<reg>& getAllReg();
 
-     static registers loadImmToReg(string string1);
+     static reg loadImmToReg(string string1);
      static string boolImmToStr(string imm_val);
      static void addUsedRegistersToStack();
      static void removeUsedRegistersFromStack();
 
-}register_alloc;
+};
 
+static Registers register_alloc=Registers();
 
 #endif //COMPI5_REGISTERS_HPP

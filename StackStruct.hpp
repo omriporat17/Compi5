@@ -5,28 +5,20 @@
 #ifndef COMPI3_STACKSTRUCT_H
 #define COMPI3_STACKSTRUCT_H
 
+#include "Pair.hpp"
 
 #include <string>
 #include <iostream>
 #include <vector>
 #include <cstdlib>
-#include "Pair.hpp"
 using namespace std;
 
 enum types
 {
-    IntType,BoolType,ByteType,VoidType,StringType,UndefinedType,add_op,mul_op,sub_op,div_op
+    IntType,BoolType,ByteType,VoidType,StringType,UndefinedType
 };
 
-enum ari_op
-{
-    add_op,mul_op,sub_op,div_op
-};
 
-enum registers
-{
-    noRegister, $v0,$t0, $t1, $t2, $t3, $t4, $t5, $t6, $t7, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9
-};
 
 static string typeToString(types types1)
 {
@@ -79,9 +71,10 @@ static string ari_to_string(ari_op op1)
     {
         return "div";
     }
+    return "";
 
 }
-static string reg_to_string(registers register1)
+static string reg_to_string(reg register1)
 {
     if(register1==noRegister)
     {
@@ -163,6 +156,7 @@ static string reg_to_string(registers register1)
     {
         return "s7";
     }
+    return "";
 
 }
 
@@ -189,7 +183,7 @@ public:
     types type;
     string str;
     vector<TypedVar> func_info;
-    registers reg;
+    reg reg;
     ari_op oper;
     StackType(types type=UndefinedType, string str=""): type(type), str(str), lineNum(1),func_info(){}
 

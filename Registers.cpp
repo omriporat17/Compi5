@@ -9,23 +9,22 @@ Registers::Registers()
 {
     for(int i=$t0;i<$t9;i++)
     {
-        this->availableRegisters.push_back((registers)i);
-        this->allRegisters.push_back((registers)i);
+        this->availableRegisters.push_back((reg)i);
+        this->allRegisters.push_back((reg)i);
     }
 
 }
-registers Registers::RegisterAlloc()
+reg Registers::RegisterAlloc()
 {
     if(!this->availableRegisters.empty())
     {
-        registers registers1=this->availableRegisters[0];
+        reg registers1=this->availableRegisters[0];
         this->availableRegisters.erase(this->availableRegisters.begin());
         return registers1;
     }
-
-
+    return noRegister;
 }
-void Registers::freeRegister(registers register1)
+void Registers::freeRegister(reg register1)
 {
     if(std::find(availableRegisters.begin(),availableRegisters.end(),register1)!=availableRegisters.end())
     {
@@ -35,13 +34,12 @@ void Registers::freeRegister(registers register1)
     this->availableRegisters.push_back(register1);
 
 }
-vector<registers>& Registers::getAvailReg()
+vector<reg>& Registers::getAvailReg()
 {
     return this->availableRegisters;
 }
-vector<registers>& Registers::getUsedReg()
+vector<reg>& Registers::getUsedReg()
 {
-    vector<registers> usedRegisters;
     for(int i=0;i<this->allRegisters.size();i++)
     {
         usedRegisters.push_back(allRegisters[i]);
@@ -50,16 +48,16 @@ vector<registers>& Registers::getUsedReg()
     return usedRegisters;
 
 }
-vector<registers>& Registers::getAllReg()
+vector<reg>& Registers::getAllReg()
 {
     return this->allRegisters;
 }
 
 
-registers Registers::loadImmToReg(string string1)
+reg Registers::loadImmToReg(string string1)
 {
     ostringstream aux;
-    registers register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc.RegisterAlloc();
     aux<<"li"<<reg_to_string(register1)<<", "<<boolImmToStr(string1);
     CodeBuffer::instance().emit(aux.str());
     return register1;
@@ -79,7 +77,7 @@ string Registers::boolImmToStr(string imm_val)
 void Registers::addUsedRegistersToStack()
 {
    // vector<registers > all_reg=this->allRegisters;
-    for(vector<registers >::iterator iterator1=register_alloc.getAllReg().begin(); iterator1!=register_alloc.getAllReg().end();iterator1++)
+    for(vector<reg>::iterator iterator1=register_alloc.getAllReg().begin(); iterator1!=register_alloc.getAllReg().end();iterator1++)
     {
         CodeBuffer::instance().emit("subu $sp,$sp,4");
         CodeBuffer::instance().emit("sw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
@@ -88,7 +86,7 @@ void Registers::addUsedRegistersToStack()
 }
 void Registers::removeUsedRegistersFromStack()
 {
-    for(vector<registers >::reverse_iterator iterator1=register_alloc.getAllReg().rbegin(); iterator1!=register_alloc.getAllReg().rend();iterator1++)
+    for(vector<reg>::reverse_iterator iterator1=register_alloc.getAllReg().rbegin(); iterator1!=register_alloc.getAllReg().rend();iterator1++)
     {
         CodeBuffer::instance().emit("lw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
         CodeBuffer::instance().emit("addu $sp,$sp,4");

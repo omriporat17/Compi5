@@ -41,8 +41,6 @@
 %token TRUE
 %token FALSE
 %token RETURN
-%token IF
-%token ELSE
 %token WHILE
 %token BREAK
 %token CONTINUE
@@ -58,6 +56,8 @@
 %right ASSIGN
 %left OR
 %left AND
+%left IF
+%left ELSE
 %nonassoc RELOP
 %left BINOPPM
 %left BINOPMD
@@ -118,7 +118,7 @@ FormalsList: FormalDecl {
 	| FormalDecl COMMA FormalsList {
 
 			$$.func_info = $3.func_info;
-			$$.func_info.insert($$.func_info.begin(),TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+			$$.func_info.insert($$.func_info.begin(),TypedVar($1.str, typeToString($1.type), $1.lineNum));
 			scopes->lineNum = $1.lineNum;
 			$$.lineNum = $1.lineNum;
 }
@@ -145,6 +145,7 @@ PreCondition: PRECOND LPAREN Exp RPAREN{
 		scopes->lineNum = $3.lineNum;
 		if(!isTypesEqual(typeToString($3.type), "BOOL")){
 			output::errorMismatch($$.lineNum);
+			exit(0);
 		}
 		scopes->isPreCondLegal($3.func_info);
 		scopes->scopes.back()->incPreconditions();
@@ -201,9 +202,18 @@ Statement: StartScope LBRACE Statements RBRACE {
 
 	| ID ASSIGN Exp SC
 	{
-		canBeAssigned($1.type, $3.type);
+		if (scopes->getFunction($1.str) != NULL) {
+			errorUndef(scopes->lineNum, $1.str);
+			exit(0);
+		}
+		if(!scopes->getVariable($1.str)){
+			errorUndef(scopes->lineNum, scopes->getVariable($1.str)->getId());
+			exit(0);
+		}
 		scopes->lineNum = $1.lineNum;
-		scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+		string id_type = scopes->getVariable($1.str)->getType();
+		canBeAssigned(stringToType(id_type), $3.type);
+		//scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
 	}
 
 
@@ -227,8 +237,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 		scopes->checkReturn(typeToString($2.type), $$.lineNum);
 	}
 
-	| IfScope %prec IF {
-
+	| IfScope %prec IF{
 
 	}
 
@@ -257,7 +266,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 		scopes->isContinueAllowed($1.lineNum);
 	}
 ;
-IfScope: StartScope IF LPAREN Exp RPAREN {
+IfScope: StartScope IF LPAREN Exp RPAREN Statement {
 
 		scopes->popScope();
 		$$.lineNum = $2.lineNum;
@@ -269,27 +278,26 @@ IfScope: StartScope IF LPAREN Exp RPAREN {
 	}
 ;
 
-
-ElseScope: ELSE StartScope Statement {
-
+ElseScope: ELSE StartScope Statement{
 	scopes->popScope();
 	$$.lineNum = $3.lineNum;
 	scopes->lineNum = $$.lineNum;
-}
+	}
 ;
-
 
 Call: ID LPAREN ExpList RPAREN {
 
-		$$.str = $1.str;
-		scopes->callFunction($1.str, $3.func_info, $1.lineNum);
+		string ret_type = scopes->callFunction($1.str, $3.func_info, $1.lineNum);
+		$1.type = stringToType(ret_type);
+		$$ = $1;
 	}
 
 	| ID LPAREN RPAREN {
 
-		$$.str = $1.str;
 		vector<TypedVar> t;
-		scopes->callFunction($1.str, t, $1.lineNum);
+		string ret_type = scopes->callFunction($1.str, t, $1.lineNum);
+		$1.type = stringToType(ret_type);
+		$$ = $1;
 	}
 ;
 
@@ -297,14 +305,14 @@ Call: ID LPAREN ExpList RPAREN {
 ExpList: Exp {
 
 		$$ = $1;
-		$$.func_info.insert($$.func_info.begin(), TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+		$$.func_info.insert($$.func_info.begin(), TypedVar( $1.str, typeToString($1.type), $1.lineNum));
 	}
 
 	| Exp COMMA ExpList{
 
 		$$ = $1;
 		$$.func_info = $3.func_info;
-		$$.func_info.insert($$.func_info.begin(), TypedVar(typeToString($1.type), $1.str, $1.lineNum));
+		$$.func_info.insert($$.func_info.begin(), TypedVar( $1.str, typeToString($1.type), $1.lineNum));
 	}
 ;
 
@@ -365,7 +373,6 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 	}
 
 	| Call {
-
 		$$ = $1;
 		scopes->lineNum = $1.lineNum;
 		FunctionEntry* func_entry = scopes->getFunction($$.str);///why is this?
