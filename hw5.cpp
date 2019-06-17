@@ -24,7 +24,7 @@ void allocVar(StackType stackType)
     ostringstream ostringstream1;
     ostringstream1<<"sw"<<reg_to_string(register1)<<", $(sp)";
     CodeBuffer::instance().emit(ostringstream1.str());
-    register_alloc.freeRegister(register1);
+    register_alloc->freeRegister(register1);
 
 }
 void assignToVar(int offset, StackType stackType)
@@ -36,7 +36,7 @@ void assignToVar(int offset, StackType stackType)
         register1=Registers::loadImmToReg(stackType.str);
     }
     CodeBuffer::instance().emit(ostringstream1.str());
-    register_alloc.freeRegister(register1);
+    register_alloc->freeRegister(register1);
 }
 reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
 {
@@ -46,11 +46,11 @@ reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
     string reg3_str=stackType3.str;
     if(register1==noRegister)
     {
-        register1=register_alloc.loadImmToReg(stackType3.str);
+        register1=register_alloc->loadImmToReg(stackType3.str);
     }
     if(register1==noRegister)
     {
-        register1=register_alloc.loadImmToReg(stackType3.str);
+        register1=register_alloc->loadImmToReg(stackType3.str);
     }
     bool resy= false;
     if(stackType1.type==ByteType && stackType3.type==ByteType)
@@ -65,23 +65,23 @@ reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
         ostringstream1<<endl<<"and "<<reg_to_string(register1)<<", "<< "255";
     }
     CodeBuffer::instance().emit(ostringstream1.str());
-    register_alloc.freeRegister(register3);
+    register_alloc->freeRegister(register3);
     return register1;
 }
 reg loadRegister(VariableEntry* variableEntry)
 {
-    reg register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
     int offset=(variableEntry->getOffset())*(-1);
     ostringstream1<<"lw"<<reg_to_string(register1)<<", "<<offset<< "($fp)";
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
-reg loadImmidiate(string number)
+reg loadImmediate(string number)
 {
-    reg register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
-    ostringstream1<<"li"<<reg_to_string(register1)<<", "<< register_alloc.boolImmToStr(number);
+    ostringstream1<<"li"<<reg_to_string(register1)<<", "<< register_alloc->boolImmToStr(number);
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
@@ -151,7 +151,7 @@ void addRegisterToFunc(reg register1)
 {
     CodeBuffer::instance().emit("subu $sp,$sp,4");
     CodeBuffer::instance().emit("sw" + reg_to_string(register1)+", ($sp)");
-    register_alloc.freeRegister(register1);
+    register_alloc->freeRegister(register1);
 }
 void addVarToFunc(string varName)
 {
@@ -164,7 +164,7 @@ void returnValueFromFunc(StackType stackType)
     if(stackType.regist!=noRegister)
     {
         CodeBuffer::instance().emit("move $v0, "+ reg_to_string(stackType.regist));
-        register_alloc.freeRegister(stackType.regist);
+        register_alloc->freeRegister(stackType.regist);
         return;
     }
     else
@@ -173,7 +173,7 @@ void returnValueFromFunc(StackType stackType)
         ostringstream ostringstream1;
         if(isImmediate(string1))
         {
-            CodeBuffer::instance().emit("li $v0, "+ register_alloc.boolImmToStr(string1));
+            CodeBuffer::instance().emit("li $v0, "+ register_alloc->boolImmToStr(string1));
             return;
         }
         ostringstream ostringstream2;
@@ -187,18 +187,18 @@ void returnValueFromFunc(StackType stackType)
 void addImmToFunc(string imm_value)
 {
     CodeBuffer::instance().emit("subu $sp, $sp, 4");
-    reg register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
-    string imm_val=register_alloc.boolImmToStr(imm_value);
+    string imm_val=register_alloc->boolImmToStr(imm_value);
     if(imm_val[imm_val.size()-1] =='b')
     {
         imm_val=imm_val.substr(0,imm_val.size()-1);
     }
 
-    ostringstream1 << "li " << reg_to_string(register1) << ", " << register_alloc.boolImmToStr(imm_val) << endl;
+    ostringstream1 << "li " << reg_to_string(register1) << ", " << register_alloc->boolImmToStr(imm_val) << endl;
     ostringstream1 << "sw " << reg_to_string(register1) << ", " << "($sp)";
     CodeBuffer::instance().emit(ostringstream1.str());
-    register_alloc.freeRegister(register1);
+    register_alloc->freeRegister(register1);
 }
 void retFromFunc(StackType stackType)
 {
@@ -209,7 +209,7 @@ void retFromFunc(StackType stackType)
 }
 reg createString(string string1)
 {
-    reg register1 = register_alloc.RegisterAlloc();
+    reg register1 = register_alloc->RegisterAlloc();
     static int counter = 0;
     ostringstream ostringstream1;
     ostringstream1 << "string_label" << counter++;
@@ -223,7 +223,7 @@ reg callFunc(string func_name, StackType stackType)
 {
     int size=0;
     // vector<TypedVar> parameters=stackType.func_info;
-    register_alloc.addUsedRegistersToStack();
+    register_alloc->addUsedRegistersToStack();
     CodeBuffer::instance().emit("subu $sp, $sp, 8");
     CodeBuffer::instance().emit("sw $ra, ($sp)");
     CodeBuffer::instance().emit("sw $fp, 4($sp)");
@@ -232,7 +232,7 @@ reg callFunc(string func_name, StackType stackType)
         reg register1= createString(stackType.str);
         stackType.regist=register1;
         allocVar(stackType);
-        register_alloc.freeRegister(register1);
+        register_alloc->freeRegister(register1);
         CodeBuffer::instance().emit("jal __" + func_name);
         CodeBuffer::instance().emit("addu $sp, $sp, 4");
         retFromFunc(stackType);

@@ -30,6 +30,7 @@ public:
     int getOffset(){return this->offset;}
     virtual void print() {}
     virtual ~TableEntry() {}
+    int getWordOffset(){ return 4*(this->offset +1);}
 };
 
 class VariableEntry : public TableEntry{

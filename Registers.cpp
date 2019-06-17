@@ -57,7 +57,7 @@ vector<reg>& Registers::getAllReg()
 reg Registers::loadImmToReg(string string1)
 {
     ostringstream aux;
-    reg register1=register_alloc.RegisterAlloc();
+    reg register1=register_alloc->RegisterAlloc();
     aux<<"li"<<reg_to_string(register1)<<", "<<boolImmToStr(string1);
     CodeBuffer::instance().emit(aux.str());
     return register1;
@@ -77,7 +77,7 @@ string Registers::boolImmToStr(string imm_val)
 void Registers::addUsedRegistersToStack()
 {
     // vector<registers > all_reg=this->allRegisters;
-    for(vector<reg>::iterator iterator1=register_alloc.getAllReg().begin(); iterator1!=register_alloc.getAllReg().end();iterator1++)
+    for(vector<reg>::iterator iterator1=register_alloc->getAllReg().begin(); iterator1!=register_alloc->getAllReg().end();iterator1++)
     {
         CodeBuffer::instance().emit("subu $sp,$sp,4");
         CodeBuffer::instance().emit("sw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
@@ -86,7 +86,7 @@ void Registers::addUsedRegistersToStack()
 }
 void Registers::removeUsedRegistersFromStack()
 {
-    for(vector<reg>::reverse_iterator iterator1=register_alloc.getAllReg().rbegin(); iterator1!=register_alloc.getAllReg().rend();iterator1++)
+    for(vector<reg>::reverse_iterator iterator1=register_alloc->getAllReg().rbegin(); iterator1!=register_alloc->getAllReg().rend();iterator1++)
     {
         CodeBuffer::instance().emit("lw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
         CodeBuffer::instance().emit("addu $sp,$sp,4");

@@ -20,7 +20,7 @@ reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3);
 
 reg loadRegister(VariableEntry* variableEntry);
 
-reg loadImmidiate(string number);
+reg loadImmediate(string number);
 
 void logRelop(const string& relop, reg register1, reg register2, vector<int>& true_list, vector<int>& false_list);
 
