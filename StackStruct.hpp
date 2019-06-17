@@ -183,9 +183,10 @@ public:
     types type;
     string str;
     vector<TypedVar> func_info;
-    reg reg;
+    reg regist;
     ari_op oper;
     StackType(types type=UndefinedType, string str=""): type(type), str(str), lineNum(1),func_info(){}
+    StackType(ari_op op,types type=IntType, string str="" ):  oper(op),type(type), str(str), lineNum(1),func_info(){}
 
 
     ///all the getters

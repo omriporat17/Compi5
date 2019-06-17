@@ -19,7 +19,7 @@ yytokentype handleTokenType(yytokentype token, types type);
 
 yytokentype handleToken(yytokentype token);
 
-yytokentype handleOP(yytokentype token, types op);
+yytokentype handleOP(yytokentype token, ari_op op);
 
 string convert_to_string(yytokentype token);
 
@@ -83,7 +83,7 @@ yytokentype handleToken(yytokentype token)
 	return handleTokenAux(token);
 }
 
-yytokentype handleOP(yytokentype token, types op)
+yytokentype handleOP(yytokentype token, ari_op op)
 {
 	yylval=StackType(op);
 	return handleTokenAux(token);

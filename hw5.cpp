@@ -10,7 +10,7 @@
 
 void allocVar(StackType stackType)
 {
-    reg register1=stackType.reg;
+    reg register1=stackType.regist;
     CodeBuffer::instance().emit("subu $sp,$sp,4");
     if(stackType.type==UndefinedType)
     {
@@ -30,7 +30,7 @@ void allocVar(StackType stackType)
 void assignToVar(int offset, StackType stackType)
 {
     ostringstream ostringstream1;
-    reg register1=stackType.reg;
+    reg register1=stackType.regist;
     if(register1==noRegister)
     {
         register1=Registers::loadImmToReg(stackType.str);
@@ -40,8 +40,8 @@ void assignToVar(int offset, StackType stackType)
 }
 reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
 {
-    reg register1=stackType1.reg;
-    reg register3=stackType3.reg;
+    reg register1=stackType1.regist;
+    reg register3=stackType3.regist;
     string reg1_str=stackType1.str;
     string reg3_str=stackType3.str;
     if(register1==noRegister)
@@ -121,11 +121,11 @@ void logRelop(const string& relop, reg register1, reg register2, vector<int>& tr
 void checkDivisionByZero(StackType stackType)
 {
     ostringstream ostringstream1;
-    if(stackType.reg==noRegister)
+    if(stackType.regist==noRegister)
     {
-        stackType.reg=Registers::loadImmToReg(stackType.str);
+        stackType.regist=Registers::loadImmToReg(stackType.str);
     }
-    ostringstream1<<"beq "<<reg_to_string(stackType.reg)<<", 0, TerminateZero";
+    ostringstream1<<"beq "<<reg_to_string(stackType.regist)<<", 0, TerminateZero";
     CodeBuffer::instance().emit(ostringstream1.str());
 
 }
@@ -161,10 +161,10 @@ void addVarToFunc(string varName)
 
 void returnValueFromFunc(StackType stackType)
 {
-    if(stackType.reg!=noRegister)
+    if(stackType.regist!=noRegister)
     {
-        CodeBuffer::instance().emit("move $v0, "+ reg_to_string(stackType.reg));
-        register_alloc.freeRegister(stackType.reg);
+        CodeBuffer::instance().emit("move $v0, "+ reg_to_string(stackType.regist));
+        register_alloc.freeRegister(stackType.regist);
         return;
     }
     else
@@ -227,7 +227,7 @@ reg callFunc(string func_name, StackType stackType)
     if(func_name=="print")
     {
         reg register1= createString(stackType.str);
-        stackType.reg=register1;
+        stackType.regist=register1;
         allocVar(stackType);
         register_alloc.freeRegister(register1);
         CodeBuffer::instance().emit("jal __" + func_name);
@@ -240,9 +240,9 @@ reg callFunc(string func_name, StackType stackType)
         for(int i=stackType.func_info.size();i>=0; i--)
         {
             VariableEntry* variableEntry=SymbolTable1->getVariable(stackType.func_info[i].Id);
-            if(stackType.func_info[i].reg== noRegister)
+            if(stackType.func_info[i].regist== noRegister)
             {
-                addRegisterToFunc(stackType.func_info[i].reg);
+                addRegisterToFunc(stackType.func_info[i].regist);
                 size+=4;
             }
             else if(isImmediate(stackType.func_info[i].Id))

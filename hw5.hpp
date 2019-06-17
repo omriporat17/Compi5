@@ -7,7 +7,7 @@
 
 #include "StackStruct.hpp"
 #include "Registers.hpp"
-#include "symbolTable.hpp"
+#include "SymbolTable.hpp"
 #include "bp.hpp"
 
 symbolTable* SymbolTable1=NULL;

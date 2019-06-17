@@ -1,0 +1,3 @@
+C:/Users/omri/CLionProjects/Compi5/cmake-build-debug/CMakeFiles/Compi5.dir
+C:/Users/omri/CLionProjects/Compi5/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/omri/CLionProjects/Compi5/cmake-build-debug/CMakeFiles/rebuild_cache.dir

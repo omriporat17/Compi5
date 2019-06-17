@@ -12,7 +12,7 @@ using namespace std;
 
 enum ari_op
 {
-    add_op,mul_op,sub_op,div_op
+    add_op,mul_op,sub_op,div_op,no_op
 };
 
 enum reg
@@ -27,7 +27,7 @@ public:
     int lineNum;
     string Id;
     string Type;
-    reg reg;
+    reg regist;
 
 
     ///Methods
