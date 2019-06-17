@@ -1,6 +1,7 @@
 %{
 	#include "SymbolTable.hpp"
 	#include "output.hpp"
+	#include "hw5.hpp"
 	#include <iostream>
 	#include <cstdlib>
 	#include <cassert>
@@ -13,7 +14,7 @@
 
 	void yyerror(const char *);
 
-	symbolTable* scopes = new symbolTable();
+	 extern symbolTable* scopes;
 
 	bool canBeAssignedBool(types t1, types t2){
 		return (t1 == t2 || (t1 == IntType && t2 == ByteType));
@@ -93,6 +94,7 @@ FuncDeclFirst: RetType ID LPAREN Formals RPAREN
 
 FuncDeclSecond: LBRACE Statements RBRACE {
 		$$.lineNum = $2.lineNum;
+		CodeBuffer::instance().bpatch($2.getNextList(),CodeBuffer::instance().genLabel());
 }
 ;
 
@@ -158,10 +160,15 @@ Statements: Statement{
 	scopes->lineNum = $$.lineNum;
 }
 
-	| Statements Statement{
+	| Statements MarkerA Statement{
 
-		$$.lineNum = $2.lineNum;
+		$$.lineNum = $3.lineNum;
 		scopes->lineNum = $$.lineNum;
+
+		$$ = $3;
+		CodeBuffer::instance().bpatch($1.getNextList(), $2.str);
+		$$.getBreakList() = CodeBuffer::instance().merge($1.getBreakList(), $3.getBreakList());
+		$$.getContinueList() = CodeBuffer::instance().merge($1.getContinueList(),$3.getContinueList());
 	}
 ;
 
@@ -197,6 +204,41 @@ Statement: StartScope LBRACE Statements RBRACE {
 		canBeAssigned($1.type, $4.type);
 		scopes->lineNum = $1.lineNum;
 		scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+
+		if ($1.type != BoolType) {
+			allocateVar($4);
+			$$.str = CodeBuffer::instance().genLabel();
+			CodeBuffer::instance().bpatch($4.getNextList(), $$.str);
+			CodeBuffer::instance().bpatch($4.getTrueList(), $$.str);
+			CodeBuffer::instance().bpatch($4.getFalseList(), $$.str);
+		} else {
+			string trueLabel = CodeBuffer::instance().genLabel();
+			$$.regist= register_alloc->RegisterAlloc();
+			stringstream s;
+			s << "li " << reg_to_str($$.regist) << ", 1";
+			CodeBuffer::instance().emit(s.str());
+			CodeBuffer::instance().emit("subu $sp, $sp, 4");
+			s.clear();
+			s.str(string());
+			s << "sw " << reg_to_str($$.regist) << ", ($sp)";
+			CodeBuffer::instance().emit(s.str());
+			$$.getNextList() = CodeBuffer::instance().makelist(emit("j "));
+			string falseLabel = CodeBuffer::instance().genLabel();
+			s.clear();
+			s.str(string());
+			s << "li " << reg_to_str($$.regist) << ", 0";
+			CodeBuffer::instance().emit(s.str());
+			CodeBuffer::instance().emit("subu $sp, $sp, 4");
+			s.clear();
+			s.str(string());
+			s << "sw " << reg_to_str($$.regist) << ", ($sp)";
+			CodeBuffer::instance().emit(s.str());
+			$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(emit("j ")));
+
+			CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
+			CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
+			register_alloc->freeRegister($$.regist);
+}
 	}
 
 
@@ -214,6 +256,40 @@ Statement: StartScope LBRACE Statements RBRACE {
 		string id_type = scopes->getVariable($1.str)->getType();
 		canBeAssigned(stringToType(id_type), $3.type);
 		//scopes->addVariable(typeToString($1.type), $2.str, $1.lineNum);
+		VariableEntry* var_entry = scopes->getVariable($1.str);
+			assert(var_entry != NULL);
+			if (var_entry->getType() != typeToString(BoolType)) {
+				assignToVar((scopes->getVariable($1.str))->getWordOffset(), $3);
+				$$.str = CodeBuffer::instance().genLabel();
+				CodeBuffer::instance().bpatch($3.getTrueList(), $$.str);
+				CodeBuffer::instance().bpatch($3.getFalseList(), $$.str);
+			} else{
+				string trueLabel = CodeBuffer::instance().genLabel();
+				$$.regist= register_alloc->RegisterAlloc();
+				stringstream s;
+				s << "li " << reg_to_str($$.regist) << ", 1";
+				CodeBuffer::instance().emit(s.str());
+				s.clear();
+				s.str(string());
+				int offset = var_entry->getWordOffset();
+				s << "sw " << reg_to_str($$.regist) << ", " << -offset << " ($fp)";
+				CodeBuffer::instance().emit(s.str());
+				$$.getNextList() = CodeBuffer::instance().makelist(emit("j "));
+				string falseLabel = CodeBuffer::instance().genLabel();
+				s.clear();
+				s.str(string());
+				s << "li " << reg_to_str($$.regist) << ", 0";
+				CodeBuffer::instance().emit(s.str());
+				s.clear();
+				s.str(string());
+				s << "sw " << reg_to_str($$.regist) <<", " << -offset << " ($fp)";
+				CodeBuffer::instance().emit(s.str());
+				$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(emit("j ")));
+
+				CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
+				CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
+				register_alloc->freeRegister($$.regist);
+			}
 	}
 
 
@@ -221,6 +297,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 
 		$$.lineNum = $2.lineNum;
 		scopes->lineNum = $$.lineNum;
+		register_alloc->freeRegister($1.reg);
 	}
 
 	| RETURN SC {
@@ -228,6 +305,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 		$$.lineNum = $1.lineNum;
 		scopes->lineNum = $$.lineNum;
 		scopes->checkReturn(typeToString(VoidType), $$.lineNum);
+		callReturnFunc();
 	}
 
 	| RETURN Exp SC {
@@ -235,38 +313,68 @@ Statement: StartScope LBRACE Statements RBRACE {
 		$$.lineNum = $1.lineNum;
 		scopes->lineNum = $$.lineNum;
 		scopes->checkReturn(typeToString($2.type), $$.lineNum);
+		if (typeToString($2.type) == typeToString(BoolType)){
+			string trueLabel = CodeBuffer::instance().bpatch;
+			CodeBuffer::instance().emit("li $v0, 1");
+			CodeBuffer::instance().emit("move $sp, $fp");
+    		CodeBuffer::instance().emit("jr $ra");
+			string falseLabel = CodeBuffer::instance().genLabel();
+			CodeBuffer::instance().emit("li $v0, 0");
+			CodeBuffer::instance().emit("move $sp, $fp");
+    		CodeBuffer::instance().emit("jr $ra");
+			CodeBuffer::instance().bpatch($2.getTrueList(), trueLabel);
+			CodeBuffer::instance().bpatch($2.getFalseList(), falseLabel);
+		} else {
+			returnValueFromFunction($2);
+			callReturnFunc();
+			$$.str = CodeBuffer::instance().genLabel();
+			CodeBuffer::instance().bpatch($2.getTrueList(), $$.str);
+			CodeBuffer::instance().bpatch($2.getFalseList(), $$.str);
+		}
 	}
 
 	| IfScope %prec IF{
+		$$.getBreakList() = $1.getBreakList();
+        $$.getNextList() = CodeBuffer::instance().merge($1.getNextList(), $1.getFalseList());
+		$$.getContinueList() = $1.getContinueList();
 
 	}
 
 	| IfScope ElseScope {
-
-
+		CodeBuffer::instance().bpatch($1.getFalseList(), $2.str);
+        $$.getNextList() = CodeBuffer::instance().merge($1.getNextList(), $2.getNextList());
+        $$.getBreakList() = CodeBuffer::instance().merge($1.getBreakList(), $2.getBreakList());
+		$$.getContinueList() = CodeBuffer::instance().merge($1.getContinueList(), $2.getContinueList());
 	}
 
-	| StartWhileScope WHILE LPAREN Exp RPAREN Statement {
+	| StartWhileScope WHILE LPAREN MarkerA Exp RPAREN MarkerA Statement MarkerB{
 
 		scopes->popScope();
-		if ($4.type != BoolType) {
+		if ($5.type != BoolType) {
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
+		CodeBuffer::instance().bpatch($8.getContinueList(), $4.str);
+		CodeBuffer::instance().bpatch($8.getNextList(), $4.str);
+		CodeBuffer::instance().bpatch($9.getNextList(), $4.str);
+		CodeBuffer::instance().bpatch($5.getTrueList(), $7.str);
+		$$.getNextList() = CodeBuffer::instance().merge($5.getFalseList(), $8.getBreakList());
+
+		register_alloc->freeRegister($5.reg);
 	}
 
 	| BREAK SC
 	{
-
 		scopes->isBreakAllowed($1.lineNum);
+		$$.getBreakList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 	}
 	| CONTINUE SC
 	{
-
 		scopes->isContinueAllowed($1.lineNum);
+		$$.getContinueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 	}
 ;
-IfScope: StartScope IF LPAREN Exp RPAREN Statement {
+IfScope: StartScope IF LPAREN Exp RPAREN MarkerA Statement {
 
 		scopes->popScope();
 		$$.lineNum = $2.lineNum;
@@ -275,13 +383,24 @@ IfScope: StartScope IF LPAREN Exp RPAREN Statement {
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
+		CodeBuffer::instance().bpatch($4.getTrueList(), $6.str);
+    	$$.getNextList() = $7.getNextList();
+    	$$.getFalseList() = $4.getFalseList();
+    	$$.getBreakList() = $7.getBreakList();
+    	$$.getContinueList() = $7.getContinueList();
+
+		register_alloc->freeRegister($4.reg);
 	}
 ;
 
-ElseScope: ELSE StartScope Statement{
-	scopes->popScope();
-	$$.lineNum = $3.lineNum;
-	scopes->lineNum = $$.lineNum;
+ElseScope: ELSE MarkerB MarkerA StartScope Statement{
+		scopes->popScope();
+		$$.lineNum = $3.lineNum;
+		scopes->lineNum = $$.lineNum;
+		$$.getBreakList() = $5.getBreakList();
+		$$.getContinueList() = $5.getContinueList();
+		$$.getNextList() = CodeBuffer::instance().merge($2.getNextList(), $5.getNextList());
+		$$.str = $3.str; // beginning label of the else scope
 	}
 ;
 
@@ -290,6 +409,8 @@ Call: ID LPAREN ExpList RPAREN {
 		string ret_type = scopes->callFunction($1.str, $3.func_info, $1.lineNum);
 		$1.type = stringToType(ret_type);
 		$$ = $1;
+		CodeBuffer::instance().bpatch($3.getNextList(), CodeBuffer::instance().genLabel());
+		$$.regist = callFunction($1.str, $3);
 	}
 
 	| ID LPAREN RPAREN {
@@ -306,6 +427,16 @@ ExpList: Exp {
 
 		$$ = $1;
 		$$.func_info.insert($$.func_info.begin(), TypedVar( $1.str, typeToString($1.type), $1.lineNum));
+
+		if(typeToString($1.type) == typeToString(BoolType)){
+	        $$.regist = register_alloc->allocateRegister();
+	        CodeBuffer::instance().bpatch($1.getTrueList(), CodeBuffer::instance().genLabel());
+	        CodeBuffer::instance().emit("li " + reg_to_str($$.regist) + ", 1");
+	        vector<int> bpass = CodeBuffer::instance().makelist(emit("j "));
+	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
+	        CodeBuffer::instance().emit("li " + reg_to_str($$.regist) + ", 0");
+	        CodeBuffer::instance().bpatch(bpass, CodeBuffer::instance().genLabel());
+	    }
 	}
 
 	| Exp COMMA ExpList{
@@ -313,6 +444,16 @@ ExpList: Exp {
 		$$ = $1;
 		$$.func_info = $3.func_info;
 		$$.func_info.insert($$.func_info.begin(), TypedVar( $1.str, typeToString($1.type), $1.lineNum));
+
+		if(typeToString($1.type) == typeToString(BoolType)){
+	        $$.regist = register_alloc->allocateRegister();
+	        CodeBuffer::instance().bpatch($1.getTrueList(), CodeBuffer::instance().genLabel());
+	        CodeBuffer::instance().emit("li " + reg_to_str($$.regist) + ", 1");
+	        vector<int> bpass = CodeBuffer::instance().makelist(emit("j "));
+	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
+	        CodeBuffer::instance().emit("li " + reg_to_str($$.regist) + ", 0");
+	        CodeBuffer::instance().bpatch(bpass, CodeBuffer::instance().genLabel());
+	    }
 	}
 ;
 
@@ -338,6 +479,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		} else {
 			$$.type = ByteType;
 		}
+		$$.regist = ari_op($1, $3, $2.op);
 	}
 	//TODO: what happens when mixin int and byte
 	| Exp BINOPMD Exp {
@@ -352,6 +494,10 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		} else {
 			$$.type = ByteType;
 		}
+		if ($2.op == div_op) {
+			checkDivisionByZero($3);
+		}
+		$$.regist = ari_op($1, $3, $2.op);
 	}
 
 	| ID {
@@ -365,6 +511,15 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		// Check if variable
 		else if (scopes->getVariable($1.str) != NULL) {
 			$$.type = stringToType((scopes->getVariable($1.str))->getType());
+			$$.regist = loadRegister(scopes->getVariable($1.str));
+				VariableEntry* var_entry = scopes->getVariable($1.str);
+				if (stringToType(var_entry->getType()) == BoolType){
+					reg tmp_register = loadImmediate("1");
+					$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_str($$.regist) + ", " + reg_to_str(tmp_reg) + ", "));
+					$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+					register_alloc->freeRegister($$.regist);
+					register_alloc->freeRegister(tmp_register);
+				}
 		}
 		else {
 			errorUndef($$.lineNum, $$.str);
@@ -376,15 +531,33 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		$$ = $1;
 		scopes->lineNum = $1.lineNum;
 		FunctionEntry* func_entry = scopes->getFunction($$.str);///why is this?
+		//TODO: check about errorUndefFunc
+		$$.regist = $1.regist;
+		if (func_entry->getType() == typeToString(types_Bool)){
+			reg tmp_reg = loadImmediate("1");
+			$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_str($1.reg) + ", " + reg_to_str(tmp_reg) + ", "));
+			$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+			register_alloc->freeRegister(tmp_reg);
+		}
 	 }
 
 	| Num {  $$ = $1; scopes->lineNum = $$.lineNum; }
 
 	| STRING {  $$ = $1; scopes->lineNum = $$.lineNum; }
 
-	| TRUE {  $$ = $1; scopes->lineNum = $$.lineNum; }
+	| TRUE {  
+		$$ = $1; 
+		scopes->lineNum = $$.lineNum;
+		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.regist= noRegister;
+	 }
 
-	| FALSE {  $$ = $1; scopes->lineNum = $$.lineNum; }
+	| FALSE {  
+		$$ = $1; 
+		scopes->lineNum = $$.lineNum; 
+		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.regist= noRegister;
+	}
 
 	| NOT Exp {
 
@@ -394,9 +567,35 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		}
 		$$.type = BoolType;
 		$$.lineNum = $2.lineNum;
+
+		$$.getTrueList() = $2.getFalseList();
+		$$.getFalseList() = $2.getTrueList();
+		$$.regist= noRegister;
 	}
 
-	| Exp AND Exp {
+	| Exp AND MarkerA Exp {
+
+		if ($1.type != BoolType) {
+			output::errorMismatch($1.lineNum);
+			exit(0);
+		}
+		if ($4.type != BoolType) {
+			output::errorMismatch($4.lineNum);
+			exit(0);
+		}
+		$$.lineNum = $1.lineNum;
+		$$.type = BoolType;
+
+		CodeBuffer::instance().bpatch($1.getTrueList(), $3.str);
+		$$.getFalseList() = CodeBuffer::instance().merge($1.getFalseList(), $4.getFalseList());
+		$$.getTrueList() = $4.getTrueList();
+		$$.regist= noRegister;
+
+		register_alloc->freeRegister($1.reg);
+		register_alloc->freeRegister($4.reg);
+	}
+
+	| Exp OR MarkerA Exp {
 
 		if ($1.type != BoolType) {
 			output::errorMismatch($1.lineNum);
@@ -408,20 +607,14 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		}
 		$$.lineNum = $1.lineNum;
 		$$.type = BoolType;
-	}
 
-	| Exp OR Exp {
+		CodeBuffer::instance().bpatch($1.getTrueList(), $3.str);		
+		$$.getFalseList() = $4.getFalseList();
+		$$.getTrueList() = CodeBuffer::instance().merge($1.getTrueList(), $4.getTrueList());
+		$$.regist= noRegister;
 
-		if ($1.type != BoolType) {
-			output::errorMismatch($1.lineNum);
-			exit(0);
-		}
-		if ($3.type != BoolType) {
-			output::errorMismatch($3.lineNum);
-			exit(0);
-		}
-		$$.lineNum = $1.lineNum;
-		$$.type = BoolType;
+		register_alloc->freeRegister($1.reg);
+		register_alloc->freeRegister($4.reg);
 	}
 
 	| Exp RELOP Exp {
@@ -433,6 +626,21 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		}
 		$$.lineNum = $1.lineNum;
 		$$.type = BoolType;
+
+		int r1 = 0;
+		int r2 = 0;
+		if ($1.regist == noRegister) {
+            $1.regist = loadImmediate($1.str);
+            r1 = 1;
+        }
+        if ($3.regist == noRegister) {
+            $3.regist = loadImmediate($3.str);
+            r2 = 1;
+        }
+        logRelop($2.str, $1.regist, $3.regist, $$.getTrueList(), $$.getFalseList());
+		reg_alloc->freeRegister($1.regist);
+		reg_alloc->freeRegister($3.regist);
+		$$.regist= noRegister;
 	}
 ;
 
@@ -457,14 +665,27 @@ Num: NUM {
 	}
 ;
 
+MarkerA: {
+	$$ = StackType();
+	$$.str = CodeBuffer::instance().genLabel();
+}
+
+MarkerB: {
+	$$ = StackType();
+	$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+}
 
 %%
 
 int main()
 {
+	startingText();
 	yyparse();
 	scopes->popScope();
 	delete scopes;
+	delete register_alloc;
+	CodeBuffer::instance().print_data_buffer();
+	CodeBuffer::instance().print_code_buffer();
 	return 0;
 }
 

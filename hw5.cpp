@@ -1,9 +1,9 @@
-
-
 //
 // Created by omri on 04/06/2019.
 //
 #include "hw5.hpp"
+
+symbolTable* scopes = new symbolTable();
 
 //TODO: take care to preconditions too....
 
@@ -176,8 +176,11 @@ void returnValueFromFunc(StackType stackType)
             CodeBuffer::instance().emit("li $v0, "+ register_alloc.boolImmToStr(string1));
             return;
         }
-        //TODO: finish this part
-        //VariableEntry variableEntry=SymbolTable.scopes->;
+        ostringstream ostringstream2;
+        VariableEntry* variableEntry=scopes->getVariable(string1);
+        assert(variableEntry!=NULL);
+        int offset = (-1)*(variableEntry->getOffset());
+        ostringstream2<<"lw $vo, "<<offset<<"($fp)";
     }
 
 }
@@ -219,7 +222,7 @@ reg createString(string string1)
 reg callFunc(string func_name, StackType stackType)
 {
     int size=0;
-   // vector<TypedVar> parameters=stackType.func_info;
+    // vector<TypedVar> parameters=stackType.func_info;
     register_alloc.addUsedRegistersToStack();
     CodeBuffer::instance().emit("subu $sp, $sp, 8");
     CodeBuffer::instance().emit("sw $ra, ($sp)");
@@ -239,7 +242,7 @@ reg callFunc(string func_name, StackType stackType)
     {
         for(int i=stackType.func_info.size();i>=0; i--)
         {
-            VariableEntry* variableEntry=SymbolTable1->getVariable(stackType.func_info[i].Id);
+            VariableEntry* variableEntry=scopes->getVariable(stackType.func_info[i].Id);
             if(stackType.func_info[i].regist== noRegister)
             {
                 addRegisterToFunc(stackType.func_info[i].regist);
@@ -261,7 +264,7 @@ reg callFunc(string func_name, StackType stackType)
         CodeBuffer::instance().emit("jal __" + func_name);
 
         reg register1 = noRegister;
-        FunctionEntry* func_entry = SymbolTable1->getFunction(func_name);
+        FunctionEntry* func_entry = scopes->getFunction(func_name);
         assert(func_entry != NULL);
 
         stringstream ostream;

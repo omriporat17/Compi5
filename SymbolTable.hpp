@@ -2,6 +2,7 @@
 #define HW3_SYMBOLTABLE_HPP
 #include "output.hpp"
 #include "StackStruct.hpp"
+#include "bp.hpp"
 #include <string>
 #include <vector>
 #include <cassert>
@@ -78,7 +79,7 @@ public:
     vector<TypedVar>& getParams() { return parameters;}
     void print() {
         //output::printPreconditions(this->id, this->preconditionsNum);
-        output::printID(this->id, this->offset, output::makeFunctionType(type, args));
+        ///output::printID(this->id, this->offset, output::makeFunctionType(type, args));
     }
 
     bool matchArgs(vector<TypedVar>& other){
@@ -133,15 +134,15 @@ private:
 public:
     Scope(){}
     ~Scope() {
-        output::endScope();
+        ///output::endScope();
         ///CHANGE: REMOVED IF FROM INSIDE FOR TO OUTSIDE FOR
         if(isFuncScope){
             string s = func_name;
-            printPreconditions(s, precond_num);
+            ///printPreconditions(s, precond_num);
         }
-        for (vector<TableEntry*>::iterator it = this->entries.begin(); it != this->entries.end(); ++it) {
+        /*for (vector<TableEntry*>::iterator it = this->entries.begin(); it != this->entries.end(); ++it) {
             (*it)->print();
-        }
+        }*/
         clearVectorOfPointers(this->entries);
     }
     Scope(int offset, bool isWhile_, bool isGlobal_ = false, bool isFuncScope_= false) :

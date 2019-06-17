@@ -10,7 +10,6 @@
 #include "SymbolTable.hpp"
 #include "bp.hpp"
 
-symbolTable* SymbolTable1=NULL;
 
 
 void allocVar(StackType stackType=StackType());

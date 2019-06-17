@@ -76,7 +76,7 @@ string Registers::boolImmToStr(string imm_val)
 }
 void Registers::addUsedRegistersToStack()
 {
-   // vector<registers > all_reg=this->allRegisters;
+    // vector<registers > all_reg=this->allRegisters;
     for(vector<reg>::iterator iterator1=register_alloc.getAllReg().begin(); iterator1!=register_alloc.getAllReg().end();iterator1++)
     {
         CodeBuffer::instance().emit("subu $sp,$sp,4");

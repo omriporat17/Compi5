@@ -21,20 +21,20 @@ private:
     vector<reg> allRegisters;
 
 public:
-     Registers();
+    Registers();
     reg RegisterAlloc();
     void freeRegister(reg reg1);
     vector<reg>& getAvailReg();
     vector<reg>& getUsedReg();
     vector<reg>& getAllReg();
 
-     static reg loadImmToReg(string string1);
-     static string boolImmToStr(string imm_val);
-     static void addUsedRegistersToStack();
-     static void removeUsedRegistersFromStack();
+    static reg loadImmToReg(string string1);
+    static string boolImmToStr(string imm_val);
+    static void addUsedRegistersToStack();
+    static void removeUsedRegistersFromStack();
 
 };
 
-static Registers register_alloc=Registers();
+static Registers *register_alloc = new Registers();
 
 #endif //COMPI5_REGISTERS_HPP
