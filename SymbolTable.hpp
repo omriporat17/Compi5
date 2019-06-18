@@ -399,6 +399,7 @@ public:
         {
             if(!functionEntry->matchType(type))
             {
+                cout << "A\n";
                 output::errorMismatch(lineno);
                 exit(0);
             }

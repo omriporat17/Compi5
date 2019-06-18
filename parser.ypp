@@ -23,6 +23,7 @@
 	void inline canBeAssigned(types t1, types t2){
 		bool b = canBeAssignedBool(t1,t2);
 		if(!b){
+			cout <<"1\n";
 			output::errorMismatch(scopes->lineNum);
 			exit(0);
 		}
@@ -146,11 +147,14 @@ PreCondition: PRECOND LPAREN Exp RPAREN{
 		$$ = $3;
 		scopes->lineNum = $3.lineNum;
 		if(!isTypesEqual(typeToString($3.type), "BOOL")){
+			cout << "2\n";
 			output::errorMismatch($$.lineNum);
 			exit(0);
 		}
 		scopes->isPreCondLegal($3.func_info);
 		scopes->scopes.back()->incPreconditions();
+
+		//precondition that doesn't happen: exit = goto $
 	}
 ;
 
@@ -222,7 +226,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 			s.str(string());
 			s << "sw " << reg_to_string($$.regist) << ", ($sp)";
 			CodeBuffer::instance().emit(s.str());
-			$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+			$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("1 j "));
 			string falseLabel = CodeBuffer::instance().genLabel();
 			s.clear();
 			s.str(string());
@@ -233,7 +237,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 			s.str(string());
 			s << "sw " << reg_to_string($$.regist) << ", ($sp)";
 			CodeBuffer::instance().emit(s.str());
-			$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j ")));
+			$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("2 j ")));
 
 			CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
 			CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
@@ -271,10 +275,10 @@ Statement: StartScope LBRACE Statements RBRACE {
 				CodeBuffer::instance().emit(s.str());
 				s.clear();
 				s.str(string());
-				int offset = var_entry->getWordOffset();
-				s << "sw " << reg_to_string($$.regist) << ", " << -offset << " ($fp)";
+				int offset = var_entry->getWordOffset()*(-1);
+				s << "sw " << reg_to_string($$.regist) << ", " << offset << " ($fp)";
 				CodeBuffer::instance().emit(s.str());
-				$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+				$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("3 j "));
 				string falseLabel = CodeBuffer::instance().genLabel();
 				s.clear();
 				s.str(string());
@@ -282,9 +286,9 @@ Statement: StartScope LBRACE Statements RBRACE {
 				CodeBuffer::instance().emit(s.str());
 				s.clear();
 				s.str(string());
-				s << "sw " << reg_to_string($$.regist) <<", " << -offset << " ($fp)";
+				s << "sw " << reg_to_string($$.regist) <<", " << offset << " ($fp)";
 				CodeBuffer::instance().emit(s.str());
-				$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j ")));
+				$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("4 j ")));
 
 				CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
 				CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
@@ -351,6 +355,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 
 		scopes->popScope();
 		if ($5.type != BoolType) {
+			cout << "3\n";
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
@@ -366,12 +371,12 @@ Statement: StartScope LBRACE Statements RBRACE {
 	| BREAK SC
 	{
 		scopes->isBreakAllowed($1.lineNum);
-		$$.getBreakList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.getBreakList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("5 j "));
 	}
 	| CONTINUE SC
 	{
 		scopes->isContinueAllowed($1.lineNum);
-		$$.getContinueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.getContinueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("6 j "));
 	}
 ;
 IfScope: StartScope IF LPAREN Exp RPAREN MarkerA Statement {
@@ -380,6 +385,7 @@ IfScope: StartScope IF LPAREN Exp RPAREN MarkerA Statement {
 		$$.lineNum = $2.lineNum;
 		scopes->lineNum = $2.lineNum;
 		if ($4.type != BoolType) {
+			cout << "4\n";
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
@@ -395,12 +401,12 @@ IfScope: StartScope IF LPAREN Exp RPAREN MarkerA Statement {
 
 ElseScope: ELSE MarkerB MarkerA StartScope Statement{
 		scopes->popScope();
-		$$.lineNum = $3.lineNum;
+		$$.lineNum = $5.lineNum;
 		scopes->lineNum = $$.lineNum;
 		$$.getBreakList() = $5.getBreakList();
 		$$.getContinueList() = $5.getContinueList();
 		$$.getNextList() = CodeBuffer::instance().merge($2.getNextList(), $5.getNextList());
-		$$.str = $3.str; // beginning label of the else scope
+		$$.str = $5.str; // beginning label of the else scope
 	}
 ;
 
@@ -433,7 +439,7 @@ ExpList: Exp {
 	        $$.regist = register_alloc->RegisterAlloc();
 	        CodeBuffer::instance().bpatch($1.getTrueList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 1");
-	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("7 j "));
 	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 0");
 	        CodeBuffer::instance().bpatch(bpass, CodeBuffer::instance().genLabel());
@@ -450,7 +456,7 @@ ExpList: Exp {
 	        $$.regist = register_alloc->RegisterAlloc();
 	        CodeBuffer::instance().bpatch($1.getTrueList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 1");
-	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("8 j "));
 	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 0");
 	        CodeBuffer::instance().bpatch(bpass, CodeBuffer::instance().genLabel());
@@ -472,6 +478,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 
 		$$.lineNum = $1.lineNum;
 		if (($1.type != IntType && $1.type != ByteType) || ($3.type != IntType && $3.type != ByteType)) {
+			cout <<"5"<<endl;
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
@@ -486,6 +493,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 
 		$$.lineNum = $1.lineNum;
 		if (($1.type != IntType && $1.type != ByteType) || ($3.type != IntType && $3.type != ByteType)) {
+			cout << "6\n";
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
@@ -510,13 +518,13 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		}
 		// Check if variable
 		else if (scopes->getVariable($1.str) != NULL) {
-			$$.type = stringToType((scopes->getVariable($1.str))->getType());
-			$$.regist = loadRegister(scopes->getVariable($1.str));
+				$$.type = stringToType((scopes->getVariable($1.str))->getType());
+				$$.regist = loadRegister(scopes->getVariable($1.str));
 				VariableEntry* var_entry = scopes->getVariable($1.str);
 				if (stringToType(var_entry->getType()) == BoolType){
 					reg tmp_register = loadImmediate("1");
 					$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_string($$.regist) + ", " + reg_to_string(tmp_register) + ", "));
-					$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+					$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("9 j "));
 					register_alloc->freeRegister($$.regist);
 					register_alloc->freeRegister(tmp_register);
 				}
@@ -536,7 +544,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		if (func_entry->getType() == typeToString(BoolType)){
 			reg tmp_reg = loadImmediate("1");
 			$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_string($1.regist) + ", " + reg_to_string(tmp_reg) + ", "));
-			$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+			$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("10 j "));
 			register_alloc->freeRegister(tmp_reg);
 		}
 	 }
@@ -548,20 +556,21 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 	| TRUE {
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
-		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("11 j "));
 		$$.regist= noRegister;
 	 }
 
 	| FALSE {
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
-		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("12 j "));
 		$$.regist= noRegister;
 	}
 
 	| NOT Exp {
 
 		if ($2.type != BoolType) {
+			cout << "7\n";
 			output::errorMismatch($2.lineNum);
 			exit(0);
 		}
@@ -576,10 +585,12 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 	| Exp AND MarkerA Exp {
 
 		if ($1.type != BoolType) {
+			cout << "8\n";
 			output::errorMismatch($1.lineNum);
 			exit(0);
 		}
 		if ($4.type != BoolType) {
+			cout << "9\n";
 			output::errorMismatch($4.lineNum);
 			exit(0);
 		}
@@ -598,11 +609,13 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 	| Exp OR MarkerA Exp {
 
 		if ($1.type != BoolType) {
+			cout << "10\n";
 			output::errorMismatch($1.lineNum);
 			exit(0);
 		}
-		if ($3.type != BoolType) {
-			output::errorMismatch($3.lineNum);
+		if ($4.type != BoolType) {
+			cout << "11\n";
+			output::errorMismatch($4.lineNum);
 			exit(0);
 		}
 		$$.lineNum = $1.lineNum;
@@ -621,6 +634,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 
 		if (($1.type != IntType && $1.type != ByteType)||($3.type != IntType && $3.type != ByteType)) {
 			//both must be numbers
+			cout << "12\n";
 			output::errorMismatch($1.lineNum);
 			exit(0);
 		}
@@ -672,7 +686,7 @@ MarkerA: {
 
 MarkerB: {
 	$$ = StackType();
-	$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("13 j "));
 }
 
 %%

@@ -82,79 +82,79 @@ static string reg_to_string(reg register1)
     }
     if(register1==$t0)
     {
-        return "t0";
+        return "$t0";
     }
     if(register1==$t1)
     {
-        return "t1";
+        return "$t1";
     }
     if(register1==$t2)
     {
-        return "t2";
+        return "$t2";
     }
     if(register1==$t3)
     {
-        return "t3";
+        return "$t3";
     }
     if(register1==$t4)
     {
-        return "t4";
+        return "$t4";
     }
     if(register1==$t5)
     {
-        return "t5";
+        return "$t5";
     }
     if(register1==$t6)
     {
-        return "t6";
+        return "$t6";
     }
     if(register1==$t7)
     {
-        return "t7";
+        return "$t7";
     }
     if(register1==$t8)
     {
-        return "t8";
+        return "$t8";
     }
     if(register1==$t9)
     {
-        return "t9";
+        return "$t9";
     }
     if(register1==$v0)
     {
-        return "v0";
+        return "$v0";
     }
     if(register1==$s0)
     {
-        return "s0";
+        return "$s0";
     }
     if(register1==$s1)
     {
-        return "s1";
+        return "$s1";
     }
     if(register1==$s2)
     {
-        return "s2";
+        return "$s2";
     }
     if(register1==$s3)
     {
-        return "s3";
+        return "$s3";
     }
     if(register1==$s4)
     {
-        return "s4";
+        return "$s4";
     }
     if(register1==$s5)
     {
-        return "s5";
+        return "$s5";
     }
     if(register1==$s6)
     {
-        return "s6";
+        return "$s6";
     }
     if(register1==$s7)
     {
-        return "s7";
+        return "$s7";
     }
     return "";
 

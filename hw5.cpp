@@ -79,8 +79,8 @@ reg loadRegister(VariableEntry* variableEntry)
 {
     reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
-    int offset=(variableEntry->getOffset())*(-1);
-    ostringstream1<<"lw"<<reg_to_string(register1)<<", "<<offset<< "($fp)";
+    int offset=(variableEntry->getWordOffset())*(-1);
+    ostringstream1<<"lw "<<reg_to_string(register1)<<", "<<offset<< "($fp)";
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
@@ -88,7 +88,7 @@ reg loadImmediate(string number)
 {
     reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
-    ostringstream1<<"li"<<reg_to_string(register1)<<", "<< register_alloc->boolImmToStr(number);
+    ostringstream1<<"li "<<reg_to_string(register1)<<", "<< register_alloc->boolImmToStr(number);
     CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
@@ -221,7 +221,7 @@ reg createString(string string1)
     ostringstream ostringstream1;
     ostringstream1 << "string_label" << counter++;
     string str_label = ostringstream1.str();
-    ostringstream1 << ": .asciiz ";
+    ostringstream1 << ": .asciiz " << string1;
     CodeBuffer::instance().emitData(ostringstream1.str());
     CodeBuffer::instance().emit("la " + reg_to_string(register1) + ", " + str_label);
     return register1;
@@ -240,14 +240,14 @@ reg callFunc(string func_name, StackType stackType)
         stackType.regist=register1;
         allocVar(stackType);
         register_alloc->freeRegister(register1);
-        CodeBuffer::instance().emit("jal __" + func_name);
+        CodeBuffer::instance().emit("jal __print");
         ass_free();
         retFromFunc(stackType);
         return noRegister;
     }
     else
     {
-        for(int i=stackType.func_info.size();i>=0; i--)
+        for(int i=stackType.func_info.size()-1;i>=0; i--)
         {
             VariableEntry* variableEntry=scopes->getVariable(stackType.func_info[i].Id);
             if(stackType.func_info[i].regist== noRegister)
@@ -304,7 +304,7 @@ void startingText()
     CodeBuffer::instance().emit("main:");
     ass_alloc();
     CodeBuffer::instance().emit("sw $ra, ($sp)");
-    CodeBuffer::instance().emit("jal __main");
+    //CodeBuffer::instance().emit("jal __main");
     CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
     CodeBuffer::instance().emit("syscall");
 
