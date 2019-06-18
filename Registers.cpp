@@ -88,7 +88,7 @@ void Registers::addUsedRegistersToStack()
     for(vector<reg>::iterator iterator1=register_alloc->getAllReg().begin(); iterator1!=register_alloc->getAllReg().end();iterator1++)
     {
         CodeBuffer::instance().emit("subu $sp,$sp,4");
-        CodeBuffer::instance().emit("sw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
+        CodeBuffer::instance().emit("sw "+reg_to_string(iterator1.operator*()) + ", ($sp)" );
 
     }
 }
@@ -96,7 +96,7 @@ void Registers::removeUsedRegistersFromStack()
 {
     for(vector<reg>::reverse_iterator iterator1=register_alloc->getAllReg().rbegin(); iterator1!=register_alloc->getAllReg().rend();iterator1++)
     {
-        CodeBuffer::instance().emit("lw"+reg_to_string(iterator1.operator*()) + ", ($sp)" );
+        CodeBuffer::instance().emit("lw "+reg_to_string(iterator1.operator*()) + ", ($sp)" );
         CodeBuffer::instance().emit("addu $sp,$sp,4");
 
     }

@@ -30,7 +30,7 @@ void allocVar(StackType stackType)
         register1=Registers::loadImmToReg(stackType.str);
     }
     ostringstream ostringstream1;
-    ostringstream1<<"sw"<<reg_to_string(register1)<<", $(sp)";
+    ostringstream1<<"sw"<<reg_to_string(register1)<<", ($sp)";
     CodeBuffer::instance().emit(ostringstream1.str());
     register_alloc->freeRegister(register1);
 }
@@ -154,11 +154,18 @@ void callReturnFunc()
     CodeBuffer::instance().emit("move $sp, $fp");
     CodeBuffer::instance().emit("jr $ra");
 }
-void addRegisterToFunc(reg register1)
+void addRegisterToFunc(reg register1)   ////in this function, we probably suppose that the register is valid todo: check it. dickhead.
 {
-    CodeBuffer::instance().emit("subu $sp,$sp,4");
-    CodeBuffer::instance().emit("sw" + reg_to_string(register1)+", ($sp)");
-    register_alloc->freeRegister(register1);
+    if(register1!=noRegister)
+    {
+        CodeBuffer::instance().emit("subu $sp,$sp,4");
+        ostringstream ostringstream1;
+        ostringstream1<<"sw"<<reg_to_string(register1)<<", ($sp)";
+        CodeBuffer::instance().emit(ostringstream1.str());
+        //CodeBuffer::instance().emit("sw" + reg_to_string(register1)+", ($sp)");
+        register_alloc->freeRegister(register1);
+    }
+
 }
 void addVarToFunc(string varName)
 {
@@ -240,7 +247,7 @@ reg callFunc(string func_name, StackType stackType)
         stackType.regist=register1;
         allocVar(stackType);
         register_alloc->freeRegister(register1);
-        CodeBuffer::instance().emit("jal __print");
+        CodeBuffer::instance().emit("jal __" + func_name);
         ass_free();
         retFromFunc(stackType);
         return noRegister;
@@ -302,7 +309,8 @@ void startingText()
     CodeBuffer::instance().emit(".globl    main");
     CodeBuffer::instance().emit(".ent    main");
     CodeBuffer::instance().emit("main:");
-    ass_alloc();
+    //ass_alloc();
+    emit_print_printi();
     CodeBuffer::instance().emit("sw $ra, ($sp)");
     //CodeBuffer::instance().emit("jal __main");
     CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");

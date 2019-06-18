@@ -90,6 +90,7 @@ FuncDeclFirst: RetType ID LPAREN Formals RPAREN
 	scopes->addFunction(typeToString($1.type), $2.str, $4.func_info, $$.lineNum, true);
 	$$.type = $1.type;
 	$$.lineNum = $1.lineNum;
+	defineFunc($2.str);
 }
 ;
 
@@ -439,7 +440,7 @@ ExpList: Exp {
 	        $$.regist = register_alloc->RegisterAlloc();
 	        CodeBuffer::instance().bpatch($1.getTrueList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 1");
-	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("7 j "));
+	        vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
 	        CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 0");
 	        CodeBuffer::instance().bpatch(bpass, CodeBuffer::instance().genLabel());
@@ -524,7 +525,9 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 				if (stringToType(var_entry->getType()) == BoolType){
 					reg tmp_register = loadImmediate("1");
 					$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_string($$.regist) + ", " + reg_to_string(tmp_register) + ", "));
-					$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("9 j "));
+					//$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("9 j ")); ///TODO: very critical, are we really need this?
+					//CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());  //TODO: the added line, for checking
+
 					register_alloc->freeRegister($$.regist);
 					register_alloc->freeRegister(tmp_register);
 				}
@@ -556,14 +559,14 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 	| TRUE {
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
-		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("11 j "));
+		$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 		$$.regist= noRegister;
 	 }
 
 	| FALSE {
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
-		$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("12 j "));
+		//$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j 12")); //TODO: DO NOT DELETE THIS!!!
 		$$.regist= noRegister;
 	}
 
@@ -686,7 +689,7 @@ MarkerA: {
 
 MarkerB: {
 	$$ = StackType();
-	$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("13 j "));
+	$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
 }
 
 %%
