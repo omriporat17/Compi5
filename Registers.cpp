@@ -7,19 +7,22 @@
 
 Registers::Registers()
 {
-    for(int i=$t0;i<$t9;i++)
+    this->capacity = 0;
+    for(int i=$t0;i<=$t9;i++)
     {
         this->availableRegisters.push_back((reg)i);
+        this->capacity++;
         this->allRegisters.push_back((reg)i);
     }
 
 }
 reg Registers::RegisterAlloc()
 {
-    if(!this->availableRegisters.empty())
+    if(!this->capacity == 0)
     {
         reg registers1=this->availableRegisters[0];
         this->availableRegisters.erase(this->availableRegisters.begin());
+        this->capacity--;
         return registers1;
     }
     return noRegister;
@@ -30,16 +33,18 @@ void Registers::freeRegister(reg register1)
     {
         return;  ///if the register is not allocated, (== available)
     }
-    assert(this->allRegisters.size()-this->availableRegisters.size()>=1);
+    //assert(REG_FILE_SIZE-capacity>=1);
     this->availableRegisters.push_back(register1);
+    this->capacity++;
 
 }
 vector<reg>& Registers::getAvailReg()
 {
     return this->availableRegisters;
 }
-vector<reg>& Registers::getUsedReg()
+vector<reg> Registers::getUsedReg()
 {
+    vector<reg> usedRegisters;
     for(int i=0;i<this->allRegisters.size();i++)
     {
         usedRegisters.push_back(allRegisters[i]);
@@ -53,6 +58,9 @@ vector<reg>& Registers::getAllReg()
     return this->allRegisters;
 }
 
+int Registers::getCapacity(){
+    return this->capacity;
+}
 
 reg Registers::loadImmToReg(string string1)
 {

@@ -10,7 +10,9 @@
 #include "SymbolTable.hpp"
 #include "bp.hpp"
 
+void ass_alloc();
 
+void ass_free();
 
 void allocVar(StackType stackType=StackType());
 
@@ -26,6 +28,7 @@ void logRelop(const string& relop, reg register1, reg register2, vector<int>& tr
 
 void checkDivisionByZero(StackType stackType);
 
+//Todo: this is never used, can delete
 void defineFunc(string func_name);
 
 bool isImmediate(string imm);
@@ -38,6 +41,7 @@ void addVarToFunc(string varName);
 
 //string boolImmToStr(string imm_val);
 
+//toDo: this is never used, can delete
 void returnValueFromFunc(StackType stackType);
 
 void addImmToFunc(string imm_val);
@@ -46,7 +50,7 @@ void retFromFunc(StackType stackType);
 
 reg createString(string string1);
 
-reg callFunc(string func_name, StackType stackType=StackType());
+reg callFunc(string func_name, StackType stackType);
 
 //void addRegToStack();
 

@@ -419,6 +419,7 @@ Call: ID LPAREN ExpList RPAREN {
 		string ret_type = scopes->callFunction($1.str, t, $1.lineNum);
 		$1.type = stringToType(ret_type);
 		$$ = $1;
+		$$.regist = callFunc($1.str, StackType());
 	}
 ;
 

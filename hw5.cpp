@@ -7,16 +7,24 @@ symbolTable* scopes = new symbolTable();
 
 //TODO: take care to preconditions too....
 
+void ass_alloc(){
+    CodeBuffer::instance().emit("subu $sp, $sp, 4");
+}
+
+void ass_free(){
+    CodeBuffer::instance().emit("addu $sp, $sp, 4");
+}
 
 void allocVar(StackType stackType)
 {
     reg register1=stackType.regist;
     CodeBuffer::instance().emit("subu $sp,$sp,4");
-    if(stackType.type==UndefinedType)
+    ///REMOVE
+    /*if(stackType.type==UndefinedType)
     {
         CodeBuffer::instance().emit("sw $0,$(sp)");
         return;
-    }
+    }*/
     if(register1==noRegister)
     {
         register1=Registers::loadImmToReg(stackType.str);
@@ -25,7 +33,6 @@ void allocVar(StackType stackType)
     ostringstream1<<"sw"<<reg_to_string(register1)<<", $(sp)";
     CodeBuffer::instance().emit(ostringstream1.str());
     register_alloc->freeRegister(register1);
-
 }
 void assignToVar(int offset, StackType stackType)
 {
@@ -60,7 +67,7 @@ reg arithmetic_op(ari_op op, StackType stackType1, StackType stackType3)
     string op_str=ari_to_string(op);
     ostringstream ostringstream1;
     ostringstream1<<op_str<<" "<<reg_to_string(register1)<<","<<reg_to_string(register1)<<", "<<reg_to_string(register3);
-    if(resy== true)
+    if(resy == true)
     {
         ostringstream1<<endl<<"and "<<reg_to_string(register1)<<", "<< "255";
     }
@@ -186,7 +193,7 @@ void returnValueFromFunc(StackType stackType)
 }
 void addImmToFunc(string imm_value)
 {
-    CodeBuffer::instance().emit("subu $sp, $sp, 4");
+    ass_alloc();
     reg register1=register_alloc->RegisterAlloc();
     ostringstream ostringstream1;
     string imm_val=register_alloc->boolImmToStr(imm_value);
@@ -234,7 +241,7 @@ reg callFunc(string func_name, StackType stackType)
         allocVar(stackType);
         register_alloc->freeRegister(register1);
         CodeBuffer::instance().emit("jal __" + func_name);
-        CodeBuffer::instance().emit("addu $sp, $sp, 4");
+        ass_free();
         retFromFunc(stackType);
         return noRegister;
     }
@@ -262,7 +269,6 @@ reg callFunc(string func_name, StackType stackType)
         }
 
         CodeBuffer::instance().emit("jal __" + func_name);
-
         reg register1 = noRegister;
         FunctionEntry* func_entry = scopes->getFunction(func_name);
         assert(func_entry != NULL);
@@ -277,21 +283,9 @@ reg callFunc(string func_name, StackType stackType)
         }
 
         return register1;
-
     }
 }
-//void addRegToStack() {}
-//void removeRegFromStack() {}
-void startingText()
-{
-    CodeBuffer::instance().emit(".globl    main");
-    CodeBuffer::instance().emit(".ent    main");
-    CodeBuffer::instance().emit("main:");
-    CodeBuffer::instance().emit("subu $sp, $sp, 4");
-    CodeBuffer::instance().emit("sw $ra, ($sp)");
-    CodeBuffer::instance().emit("jal __main");
-    CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
-    CodeBuffer::instance().emit("syscall");
+void inline emit_print_printi(){
     CodeBuffer::instance().emit("__print:");
     CodeBuffer::instance().emit("lw $a0, 0($sp)");
     CodeBuffer::instance().emit("li $v0, 4");
@@ -302,6 +296,17 @@ void startingText()
     CodeBuffer::instance().emit("li $v0, 1");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
+}
+void startingText()
+{
+    CodeBuffer::instance().emit(".globl    main");
+    CodeBuffer::instance().emit(".ent    main");
+    CodeBuffer::instance().emit("main:");
+    ass_alloc();
+    CodeBuffer::instance().emit("sw $ra, ($sp)");
+    CodeBuffer::instance().emit("jal __main");
+    CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
+    CodeBuffer::instance().emit("syscall");
 
     CodeBuffer::instance().emitData("DivisionByZero: .asciiz \"Error division by zero\\n\"");
     CodeBuffer::instance().emit("j ExitCode");

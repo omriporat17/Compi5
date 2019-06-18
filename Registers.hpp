@@ -14,19 +14,22 @@
 
 #include "bp.hpp"
 
+#define REG_FILE_SIZE $t9
 class Registers {
 private:
     vector<reg> availableRegisters;
-    vector<reg> usedRegisters;
     vector<reg> allRegisters;
+    int capacity; //how many registers are currently free
+
 
 public:
     Registers();
     reg RegisterAlloc();
     void freeRegister(reg reg1);
     vector<reg>& getAvailReg();
-    vector<reg>& getUsedReg();
+    vector<reg> getUsedReg();
     vector<reg>& getAllReg();
+    int getCapacity();
 
     static reg loadImmToReg(string string1);
     static string boolImmToStr(string imm_val);
