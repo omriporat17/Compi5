@@ -5,4 +5,4 @@ set(CMAKE_CXX_STANDARD 98)
 
 add_executable(Compi5 main.cpp output.cpp output.hpp symbolTable.cpp
         StackStruct.hpp bp.cpp bp.hpp Pair.cpp Pair.hpp
-        Registers.cpp Registers.hpp hw5.hpp hw5.cpp SymbolTable.hpp StackStruct.cpp)
+        Registers.cpp Registers.hpp hw5.hpp hw5.cpp SymbolTable.hpp StackStruct.cpp asmFunc.cpp asmFunc.hpp)

@@ -9,10 +9,9 @@
 #include "Registers.hpp"
 #include "SymbolTable.hpp"
 #include "bp.hpp"
+#include "asmFunc.hpp"
 
-void ass_alloc();
 
-void ass_free();
 
 void allocVar(StackType stackType=StackType());
 

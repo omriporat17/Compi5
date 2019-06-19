@@ -13,14 +13,20 @@
 #include <sstream>
 
 #include "bp.hpp"
+#include "asmFunc.hpp"
 
-#define REG_FILE_SIZE $t9
+#define REG_FILE_SIZE 19
+
+
+
 class Registers {
 private:
+    /*
     vector<reg> availableRegisters;
     vector<reg> allRegisters;
     int capacity; //how many registers are currently free
-
+*/
+    bool allRegisters[REG_FILE_SIZE];
 
 public:
     Registers();
@@ -30,11 +36,16 @@ public:
     vector<reg> getUsedReg();
     vector<reg>& getAllReg();
     int getCapacity();
+    reg intToReg(int reg_num);
+
+    int regToInt(reg reg1);
 
     static reg loadImmToReg(string string1);
     static string boolImmToStr(string imm_val);
-    static void addUsedRegistersToStack();
-    static void removeUsedRegistersFromStack();
+    void addUsedRegistersToStack();
+    void removeUsedRegistersFromStack();
+
+
 
 };
 
