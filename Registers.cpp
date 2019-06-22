@@ -61,7 +61,7 @@ void Registers::freeRegister(reg register1)
     this->allRegisters[reg_index]=false;
 
 }
-vector<reg>& Registers::getAvailReg()
+vector<reg> Registers::getAvailReg()
 {
     //return this->availableRegisters;
     vector<reg> availReg;
@@ -96,7 +96,7 @@ vector<reg> Registers::getUsedReg()
     return usedReg;
 
 }
-vector<reg>& Registers::getAllReg()
+vector<reg> Registers::getAllReg()
 {
     //return this->allRegisters;
     vector<reg> allReg;
@@ -131,7 +131,7 @@ reg Registers::loadImmToReg(string string1)
     //CodeBuffer::instance().emit(aux.str());
     string string2=boolImmToStr(string1);
     loadImm(register1,string2);
-   // register_alloc->freeRegister(register1);
+    // register_alloc->freeRegister(register1);
     return register1;
 }
 string Registers::boolImmToStr(string imm_val)
@@ -154,7 +154,6 @@ void Registers::addUsedRegistersToStack()
     {
         CodeBuffer::instance().emit("subu $sp,$sp,4");
         CodeBuffer::instance().emit("sw "+reg_to_string(iterator1.operator*()) + ", ($sp)" );
-
     }
      */
     for(int i=0; i<REG_FILE_SIZE; i++)
@@ -164,15 +163,15 @@ void Registers::addUsedRegistersToStack()
 }
 void Registers::removeUsedRegistersFromStack()
 {
-  //  for(vector<reg>::reverse_iterator iterator1=register_alloc->getAllReg().rbegin(); iterator1!=register_alloc->getAllReg().rend();iterator1++)
+    //  for(vector<reg>::reverse_iterator iterator1=register_alloc->getAllReg().rbegin(); iterator1!=register_alloc->getAllReg().rend();iterator1++)
     //{
-        /*
-        CodeBuffer::instance().emit("lw "+reg_to_string(iterator1.operator*()) + ", ($sp)" );
-        CodeBuffer::instance().emit("addu $sp,$sp,4");
-         */
-      //  pushReg(iterator1.operator*());
+    /*
+    CodeBuffer::instance().emit("lw "+reg_to_string(iterator1.operator*()) + ", ($sp)" );
+    CodeBuffer::instance().emit("addu $sp,$sp,4");
+     */
+    //  pushReg(iterator1.operator*());
 
-   // }
+    // }
     for(int i=0; i<REG_FILE_SIZE; i++)
     {
         popReg(intToReg(i));

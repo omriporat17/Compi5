@@ -37,7 +37,6 @@ int addB(reg dst, reg src1, reg src2)
 /*
 int addi(reg dst, reg src1, int imm)
 {
-
 }
 */
 int sub(reg dst, reg src1, reg src2)

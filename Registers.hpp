@@ -32,9 +32,9 @@ public:
     Registers();
     reg RegisterAlloc();
     void freeRegister(reg reg1);
-    vector<reg>& getAvailReg();
+    vector<reg> getAvailReg();
     vector<reg> getUsedReg();
-    vector<reg>& getAllReg();
+    vector<reg> getAllReg();
     int getCapacity();
     reg intToReg(int reg_num);
 

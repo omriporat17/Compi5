@@ -121,7 +121,7 @@ reg loadRegister(VariableEntry* variableEntry)
     int offset=(variableEntry->getWordOffset())*(-1);
     popOffset(register1,offset);
     //ostringstream1<<"lw "<<reg_to_string(register1)<<", "<<offset<< "($fp)";
-   // CodeBuffer::instance().emit(ostringstream1.str());
+    // CodeBuffer::instance().emit(ostringstream1.str());
     return register1;
 }
 reg loadImmediate(string number)
@@ -163,7 +163,6 @@ void logRelop(const string& relop, reg register1, reg register2, vector<int>& tr
 
     /*
     string rop="";
-
     if(relop == "==")
     {
         rop="beq ";
@@ -221,8 +220,9 @@ void callReturnFunc()
     CodeBuffer::instance().emit("move $sp, $fp");
     CodeBuffer::instance().emit("jr $ra");
 }
-void addRegisterToFunc(reg register1)   ////in this function, we probably suppose that the register is valid todo: check it.
-{
+
+////in this function, we probably suppose that the register is valid todo: check it.
+void addRegisterToFunc(reg register1) {
     if(register1!=noRegister)
     {
         /*
@@ -269,7 +269,7 @@ void returnValueFromFunc(StackType stackType)
             loadImm($v0,string2);
             return;
         }
-       // ostringstream ostringstream2;
+        // ostringstream ostringstream2;
         VariableEntry* variableEntry=scopes->getVariable(string1);
         //assert(variableEntry!=NULL);
         int offset = (-1)*(variableEntry->getOffset());
@@ -348,7 +348,7 @@ reg callFunc(string func_name, StackType stackType)
             if(stackType.func_info[i].regist== noRegister)
             {
                 addRegisterToFunc(stackType.func_info[i].regist);
-               // size+=4;
+                // size+=4;
             }
             else if(isImmediate(stackType.func_info[i].Id))
             {
@@ -378,7 +378,7 @@ reg callFunc(string func_name, StackType stackType)
         retFromFunc(stackType);
 
         if (func_entry->getType() != typeToString(VoidType)) {
-           // CodeBuffer::instance().emit("move " + reg_to_string(register1) + ", $v0");
+            // CodeBuffer::instance().emit("move " + reg_to_string(register1) + ", $v0");
             mov(register1,$v0);
         }
 
@@ -399,15 +399,16 @@ void inline emit_print_printi(){
 }
 void startingText()
 {
-    CodeBuffer::instance().emit(".globl    main");
-    CodeBuffer::instance().emit(".ent    main");
+    CodeBuffer::instance().emit(".globl main");
+    CodeBuffer::instance().emit(".ent main");
     CodeBuffer::instance().emit("main:");
     //ass_alloc();
-    emit_print_printi();
+    CodeBuffer::instance().emit("subu $sp, $sp, 4");
     CodeBuffer::instance().emit("sw $ra, ($sp)");
-    //CodeBuffer::instance().emit("jal __main");
+    CodeBuffer::instance().emit("jal __main");
     CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
     CodeBuffer::instance().emit("syscall");
+    emit_print_printi();
 
     CodeBuffer::instance().emitData("DivisionByZero: .asciiz \"Error division by zero\\n\"");
     CodeBuffer::instance().emit("j ExitCode");
