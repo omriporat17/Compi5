@@ -175,6 +175,7 @@ Statements: Statement{
 
 		$$ = $3;
 		CodeBuffer::instance().bpatch($1.getNextList(), $2.str);
+		$$.getNextList() = CodeBuffer::instance().merge($1.getNextList(), $3.getNextList());
 		$$.getBreakList() = CodeBuffer::instance().merge($1.getBreakList(), $3.getBreakList());
 		$$.getContinueList() = CodeBuffer::instance().merge($1.getContinueList(),$3.getContinueList());
 	}
@@ -233,9 +234,10 @@ Statement: StartScope LBRACE Statements RBRACE {
 			//s.str(string());
 			//s << "sw " << reg_to_string($$.regist) << ", ($sp)";
 			//CodeBuffer::instance().emit(s.str());
-			loadImm($$.regist, "1");
+			loadImm($$.regist, "1\n");
 			pushReg($$.regist);
 			//$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("1 j "));
+			CodeBuffer::instance().emit("1\n");
 			$$.getNextList()= CodeBuffer::instance().makelist(jmp());
 			string falseLabel = CodeBuffer::instance().genLabel();
 			//s.clear();
@@ -250,6 +252,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 			//CodeBuffer::instance().emit(s.str());
 			pushReg($$.regist);
 			//$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("2 j ")));
+			CodeBuffer::instance().emit("2\n");
 			$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(jmp()));
 			CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
 			CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
@@ -294,6 +297,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 				//CodeBuffer::instance().emit(s.str());
 			pushOffset($$.regist, offset);
 				//$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("3 j "));
+			CodeBuffer::instance().emit("3\n");
 			$$.getNextList() = CodeBuffer::instance().makelist(jmp());
 			string falseLabel = CodeBuffer::instance().genLabel();
 				//s.clear();
@@ -307,6 +311,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 				//CodeBuffer::instance().emit(s.str());
 			pushOffset($$.regist, offset);
 				//$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(CodeBuffer::instance().emit("4 j ")));
+			CodeBuffer::instance().emit("4\n");
 			$$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), CodeBuffer::instance().makelist(jmp()));
 			CodeBuffer::instance().bpatch($4.getTrueList(), trueLabel);
 			CodeBuffer::instance().bpatch($4.getFalseList(), falseLabel);
@@ -361,14 +366,14 @@ Statement: StartScope LBRACE Statements RBRACE {
 
 	| IfScope %prec IF{
 		$$.getBreakList() = $1.getBreakList();
-        $$.getNextList() = CodeBuffer::instance().merge($1.getNextList(), $1.getFalseList());
+        $$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), $1.getFalseList());
 		$$.getContinueList() = $1.getContinueList();
 
 	}
 
 	| IfScope ElseScope {
 		CodeBuffer::instance().bpatch($1.getFalseList(), $2.str);
-        $$.getNextList() = CodeBuffer::instance().merge($1.getNextList(), $2.getNextList());
+        $$.getNextList() = CodeBuffer::instance().merge($$.getNextList(), $2.getNextList());
         $$.getBreakList() = CodeBuffer::instance().merge($1.getBreakList(), $2.getBreakList());
 		$$.getContinueList() = CodeBuffer::instance().merge($1.getContinueList(), $2.getContinueList());
 	}
@@ -394,12 +399,14 @@ Statement: StartScope LBRACE Statements RBRACE {
 	{
 		scopes->isBreakAllowed($1.lineNum);
 		//$$.getBreakList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("5 j "));
+		CodeBuffer::instance().emit("5\n");
 		$$.getBreakList() = CodeBuffer::instance().makelist(jmp());
 	}
 	| CONTINUE SC
 	{
 		scopes->isContinueAllowed($1.lineNum);
 		//$$.getContinueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("6 j "));
+		CodeBuffer::instance().emit("6\n");
 		$$.getContinueList() = CodeBuffer::instance().makelist(jmp());
 	}
 ;
@@ -465,6 +472,7 @@ ExpList: Exp {
 	        //CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 1");
 	        loadImm($$.regist, "1");
 	        //vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	        CodeBuffer::instance().emit("7\n");
 	        vector<int> f_bypass = CodeBuffer::instance().makelist(jmp()); //j7
 	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
 	        //CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 0");
@@ -486,6 +494,7 @@ ExpList: Exp {
 	        //CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 1");
 	        loadImm($$.regist, "1");
 	        //vector<int> bpass = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	        CodeBuffer::instance().emit("8\n");
 	        vector<int> f_bypass = CodeBuffer::instance().makelist(jmp());
 	        CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());
 	        //CodeBuffer::instance().emit("li " + reg_to_string($$.regist) + ", 0");
@@ -558,8 +567,11 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 					//$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_string($$.regist) + ", " + reg_to_string(tmp_register) + ", "));
 					//$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("9 j ")); ///TODO: very critical, are we really need this?
 					$$.getTrueList() = CodeBuffer::instance().makelist(beq($$.regist,tmp_register));
+					//CodeBuffer::instance().bpatch($$.getTrueList(), CodeBuffer::instance().genLabel());
+					CodeBuffer::instance().emit("9\n");
 					$$.getFalseList() = CodeBuffer::instance().makelist(jmp());		//j9	
-					CodeBuffer::instance().bpatch($1.getFalseList(), CodeBuffer::instance().genLabel());  //TODO: the added line, for checking
+					CodeBuffer::instance().bpatch($$.getFalseList(), CodeBuffer::instance().genLabel());  //TODO: the added line, for checking
+					
 					register_alloc->freeRegister($$.regist);
 					register_alloc->freeRegister(tmp_register);
 				}
@@ -583,6 +595,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 			//$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("beq " + reg_to_string($$.regist) + ", " + reg_to_string(tmp_register) + ", "));
 			//$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("9 j ")); ///TODO: very critical, are we really need this?
 			$$.getTrueList() = CodeBuffer::instance().makelist(beq($$.regist,tmp_reg));
+			CodeBuffer::instance().emit("10\n");
 			$$.getFalseList() = CodeBuffer::instance().makelist(jmp());	//maybe we need a bpatch here??
 			register_alloc->freeRegister(tmp_reg);
 		}
@@ -596,6 +609,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
 		//$$.getTrueList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+		CodeBuffer::instance().emit("11\n");
 		$$.getTrueList() = CodeBuffer::instance().makelist(jmp()); //j11
 		$$.regist= noRegister;
 	 }
@@ -604,7 +618,8 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 		$$ = $1;
 		scopes->lineNum = $$.lineNum;
 		//$$.getFalseList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j 12")); //TODO: DO NOT DELETE THIS!!!
-		$$.getFalseList() = CodeBuffer::instance().makelist(jmp()); //j12
+		CodeBuffer::instance().emit("12\n");
+		$$.getFalseList() = CodeBuffer::instance().makelist(jmp());
 		$$.regist= noRegister;
 	}
 
@@ -728,6 +743,7 @@ M: { // that's M marker
 N: { // that's N marker
 	$$ = StackType();
 	//$$.getNextList() = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));
+	CodeBuffer::instance().emit("13\n");
 	$$.getNextList()= CodeBuffer::instance().makelist(jmp()); //j13
 }
 

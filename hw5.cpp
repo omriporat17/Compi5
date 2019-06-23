@@ -325,7 +325,7 @@ reg callFunc(string func_name, StackType stackType)
     int size=0;
     // vector<TypedVar> parameters=stackType.func_info;
     register_alloc->addUsedRegistersToStack();
-    CodeBuffer::instance().emit("subu $sp, $sp, 8");
+    CodeBuffer::instance().emit("subu $sp, $sp, 4");
     CodeBuffer::instance().emit("sw $ra, ($sp)");
     CodeBuffer::instance().emit("sw $fp, 4($sp)");
     if(func_name=="print")
