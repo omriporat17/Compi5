@@ -40,7 +40,6 @@ void addVarToFunc(string varName);
 
 //string boolImmToStr(string imm_val);
 
-//toDo: this is never used, can delete
 void returnValueFromFunc(StackType stackType);
 
 void addImmToFunc(string imm_val);
@@ -56,5 +55,7 @@ reg callFunc(string func_name, StackType stackType);
 //void removeRegFromStack();
 
 void startingText();
+
+void endingText();
 
 #endif //COMPI5_HW5_HPP

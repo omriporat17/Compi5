@@ -155,9 +155,10 @@ int jmp()
 
 void pushReg(reg src)
 {
+    //TODO: add protection to reg_to_string
     std::ostringstream ostringstream1;
+    ostringstream1<<"sub $sp, $sp, 4\n";
     ostringstream1<< "sw "<< reg_to_string(src)<< ", ($sp) "<<endl;
-    ostringstream1<<"sub $sp, $sp, 4";
     CodeBuffer::instance().emit(ostringstream1.str());
 }
 
@@ -173,8 +174,8 @@ void pushImm(int imm)
 void popReg(reg src)
 {
     std::ostringstream ostringstream1;
-    ostringstream1<<"addu $sp, $sp, 4"<<endl;
     ostringstream1<< "lw "<< reg_to_string(src)<< ", ($sp) "<< endl;
+    ostringstream1<<"addu $sp, $sp, 4"<<endl;
     CodeBuffer::instance().emit(ostringstream1.str());
 }
 

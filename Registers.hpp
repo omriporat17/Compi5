@@ -32,10 +32,12 @@ public:
     Registers();
     reg RegisterAlloc();
     void freeRegister(reg reg1);
+    //Todo: maybe these will fuck off soon
     vector<reg> getAvailReg();
     vector<reg> getUsedReg();
     vector<reg> getAllReg();
     int getCapacity();
+
     reg intToReg(int reg_num);
 
     int regToInt(reg reg1);

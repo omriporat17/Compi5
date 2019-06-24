@@ -301,9 +301,14 @@ void retFromFunc(StackType stackType)
 {
     //popReg($ra);
     //popReg($fp);
+
     CodeBuffer::instance().emit("lw $ra, ($sp)");
-    CodeBuffer::instance().emit("lw $fp, 4($sp)");
-    CodeBuffer::instance().emit("addu $sp, $sp, 8");
+    CodeBuffer::instance().emit("addu $sp, $sp, 4");
+
+    CodeBuffer::instance().emit("lw $fp, ($sp)");
+    CodeBuffer::instance().emit("addu $sp, $sp, 4");
+
+    //CodeBuffer::instance().emit("addu $sp, $sp, 8");
     register_alloc->removeUsedRegistersFromStack();
 }
 reg createString(string string1)
@@ -316,7 +321,7 @@ reg createString(string string1)
     ostringstream1 << ": .asciiz " << string1;
     CodeBuffer::instance().emitData(ostringstream1.str());
     ostringstream ostringstream2;
-    ostringstream2<<"la"<<reg_to_string(register1)<<", "<<str_label;
+    ostringstream2<<"la "<<reg_to_string(register1)<<", "<<str_label;
     CodeBuffer::instance().emit(ostringstream2.str());
     return register1;
 }
@@ -325,9 +330,11 @@ reg callFunc(string func_name, StackType stackType)
     int size=0;
     // vector<TypedVar> parameters=stackType.func_info;
     register_alloc->addUsedRegistersToStack();
+    //CodeBuffer::instance().emit("subu $sp, $sp, 8");
+    CodeBuffer::instance().emit("subu $sp, $sp, 4");
+    CodeBuffer::instance().emit("sw $fp, ($sp)");
     CodeBuffer::instance().emit("subu $sp, $sp, 4");
     CodeBuffer::instance().emit("sw $ra, ($sp)");
-    CodeBuffer::instance().emit("sw $fp, 4($sp)");
     if(func_name=="print")
     {
         reg register1= createString(stackType.str);
@@ -340,8 +347,6 @@ reg callFunc(string func_name, StackType stackType)
         retFromFunc(stackType);
         return noRegister;
     }
-    else
-    {
         for(int i=stackType.func_info.size()-1;i>=0; i--)
         {
             VariableEntry* variableEntry=scopes->getVariable(stackType.func_info[i].Id);
@@ -383,16 +388,16 @@ reg callFunc(string func_name, StackType stackType)
         }
 
         return register1;
-    }
+
 }
 void inline emit_print_printi(){
     CodeBuffer::instance().emit("__print:");
-    CodeBuffer::instance().emit("lw $a0, 0($sp)");
+    CodeBuffer::instance().emit("lw $a0, 4($sp)");
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
     CodeBuffer::instance().emit("__printi:");
-    CodeBuffer::instance().emit("lw $a0, 0($sp)");
+    CodeBuffer::instance().emit("lw $a0, 4($sp)");
     CodeBuffer::instance().emit("li $v0, 1");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
@@ -416,4 +421,8 @@ void startingText()
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("j ExitCode");
+}
+
+void endingText(){
+    CodeBuffer::instance().emit("jr $ra");
 }
