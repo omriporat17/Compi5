@@ -84,7 +84,11 @@ Funcs: /*epsilon*/{}
 ;
 
 
-FuncDecl: FuncDeclFirst PreConditions FuncDeclSecond { scopes->popScope(); }
+FuncDecl: FuncDeclFirst PreConditions FuncDeclSecond 
+{ 
+	scopes->popScope();
+	callReturnFunc(); 
+}
 ;
 
 
