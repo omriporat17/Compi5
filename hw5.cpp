@@ -20,7 +20,7 @@ void allocVar(StackType stackType)
         CodeBuffer::instance().emit("sw $0,$(sp)");
         return;
     }*/
-    if(register1==noRegister)
+    if(register1==noRegister || reg_to_string(register1)=="")
     {
         register1=Registers::loadImmToReg(stackType.str);
     }
@@ -254,6 +254,7 @@ void returnValueFromFunc(StackType stackType)
     if(stackType.regist!=noRegister)
     {
         //CodeBuffer::instance().emit("move $v0, "+ reg_to_string(stackType.regist));
+        stackType.regist = register_alloc->RegisterAlloc();
         mov($v0,stackType.regist);
         register_alloc->freeRegister(stackType.regist);
         return;
@@ -346,47 +347,46 @@ reg callFunc(string func_name, StackType stackType)
         retFromFunc(stackType);
         return noRegister;
     }
-        for(int i=stackType.func_info.size()-1;i>=0; i--)
+    for(int i=stackType.func_info.size()-1;i>=0; i--)
+    {
+        VariableEntry* variableEntry=scopes->getVariable(stackType.func_info[i].Id);
+        if(stackType.func_info[i].regist== noRegister)
         {
-            VariableEntry* variableEntry=scopes->getVariable(stackType.func_info[i].Id);
-            if(stackType.func_info[i].regist== noRegister)
-            {
-                addRegisterToFunc(stackType.func_info[i].regist);
+            addRegisterToFunc(stackType.func_info[i].regist);
                 // size+=4;
-            }
-            else if(isImmediate(stackType.func_info[i].Id))
-            {
-                addImmToFunc(stackType.func_info[i].Id);
-                //size+=4;
-            }
-            else if(variableEntry!=NULL)
-            {
-                addVarToFunc(stackType.func_info[i].Id);
-                //size+=4;
-            }
-            size+=1;
-
         }
-
-        CodeBuffer::instance().emit("jal __" + func_name);
-        reg register1 = noRegister;
-        FunctionEntry* func_entry = scopes->getFunction(func_name);
-        assert(func_entry != NULL);
-        for(int i=0;i<size;i++)
+        else if(isImmediate(stackType.func_info[i].Id))
         {
-            pop();
+            addImmToFunc(stackType.func_info[i].Id);
+                //size+=4;
         }
+        else if(variableEntry!=NULL)
+        {
+            addVarToFunc(stackType.func_info[i].Id);
+                //size+=4;
+        }
+            //size+=1;
+    }
+
+    CodeBuffer::instance().emit("jal __" + func_name);
+    reg register1 = noRegister;
+    FunctionEntry* func_entry = scopes->getFunction(func_name);
+    assert(func_entry != NULL);
+    ///This is fantastic. Bad Coding habits for the win!
+    if(func_name != "printi"){
+        pop();
+    }
+    retFromFunc(stackType);
         //stringstream ostream;
         //ostream << "addu $sp, $sp, " << size;
         //CodeBuffer::instance().emit(ostream.str());
-        retFromFunc(stackType);
-
-        if (func_entry->getType() != typeToString(VoidType)) {
+    ///This is supposed to handle return value
+    if (func_entry->getType() != typeToString(VoidType)) {
             // CodeBuffer::instance().emit("move " + reg_to_string(register1) + ", $v0");
-            mov(register1,$v0);
-        }
-
-        return register1;
+        register1 = register_alloc->RegisterAlloc();
+        mov(register1,$v0);
+    }
+    return register1;
 
 }
 void inline emit_print_printi(){

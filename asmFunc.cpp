@@ -14,7 +14,7 @@ int check_div_by_zero(reg src)
 int convert_to_byte(reg src)
 {
     std::ostringstream ostringstream1;
-    ostringstream1 << "and " << reg_to_string(src) << ", " << reg_to_string(src) << ", 0xff "<<reg_to_string(src);
+    ostringstream1 << "and " << reg_to_string(src) << ", " << reg_to_string(src) << ", 0xff";
     return CodeBuffer::instance().emit(ostringstream1.str());
 }
 
