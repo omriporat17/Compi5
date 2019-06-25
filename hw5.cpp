@@ -391,12 +391,12 @@ reg callFunc(string func_name, StackType stackType)
 }
 void inline emit_print_printi(){
     CodeBuffer::instance().emit("__print:");
-    CodeBuffer::instance().emit("lw $a0, 4($sp)");
+    CodeBuffer::instance().emit("lw $a0, ($sp)");
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
     CodeBuffer::instance().emit("__printi:");
-    CodeBuffer::instance().emit("lw $a0, 4($sp)");
+    CodeBuffer::instance().emit("lw $a0, ($sp)");
     CodeBuffer::instance().emit("li $v0, 1");
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
