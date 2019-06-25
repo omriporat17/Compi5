@@ -376,7 +376,6 @@ reg callFunc(string func_name, StackType stackType)
     if(func_name != "printi"){
         pop();
     }
-    retFromFunc(stackType);
         //stringstream ostream;
         //ostream << "addu $sp, $sp, " << size;
         //CodeBuffer::instance().emit(ostream.str());
@@ -386,6 +385,7 @@ reg callFunc(string func_name, StackType stackType)
         register1 = register_alloc->RegisterAlloc();
         mov(register1,$v0);
     }
+    retFromFunc(stackType);
     return register1;
 
 }

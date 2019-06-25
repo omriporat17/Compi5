@@ -185,8 +185,10 @@ public:
     vector<TypedVar> func_info;
     reg regist;
     ari_op oper;
-    StackType(types type=UndefinedType, string str=""): type(type), str(str), lineNum(1),func_info(){}
-    StackType(ari_op op,types type=IntType, string str="" ):  oper(op),type(type), str(str), lineNum(1),func_info(){}
+    StackType(types type=UndefinedType, string str=""): type(type), str(str), lineNum(1),func_info(),
+                                                        regist(noRegister){}
+    StackType(ari_op op,types type=IntType, string str="" ):  oper(op),type(type), str(str), lineNum(1),func_info(),
+                                                              regist(noRegister){}
 
 
     ///all the getters
