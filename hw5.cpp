@@ -12,7 +12,7 @@ void allocVar(StackType stackType)
 {
     reg register1=stackType.regist;
     //CodeBuffer::instance().emit("subu $sp,$sp,4");
-    pop();
+    //pop();
 
     ///REMOVE
     /*if(stackType.type==UndefinedType)
@@ -281,7 +281,7 @@ void returnValueFromFunc(StackType stackType)
 void addImmToFunc(string imm_value)
 {
     //ass_alloc();
-    pop();
+    //pop();
     reg register1=register_alloc->RegisterAlloc();
     //ostringstream ostringstream1;
     string imm_val=register_alloc->boolImmToStr(imm_value);
@@ -301,7 +301,6 @@ void retFromFunc(StackType stackType)
 {
     //popReg($ra);
     //popReg($fp);
-
     CodeBuffer::instance().emit("lw $ra, ($sp)");
     CodeBuffer::instance().emit("addu $sp, $sp, 4");
 
