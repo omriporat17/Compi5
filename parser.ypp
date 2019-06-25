@@ -435,7 +435,7 @@ ElseScope: ELSE N M StartScope Statement{
 		$$.getBreakList() = $5.getBreakList();
 		$$.getContinueList() = $5.getContinueList();
 		$$.getNextList() = CodeBuffer::instance().merge($2.getNextList(), $5.getNextList());
-		$$.str = $5.str; // beginning label of the else scope
+		$$.str = $3.str; 
 	}
 ;
 
@@ -565,7 +565,7 @@ Exp: LPAREN Exp RPAREN {  $$ = $2; scopes->lineNum = $$.lineNum = $3.lineNum; }
 					$$.getTrueList() = CodeBuffer::instance().makelist(beq($$.regist,tmp_register));
 					//CodeBuffer::instance().bpatch($$.getTrueList(), CodeBuffer::instance().genLabel());
 					$$.getFalseList() = CodeBuffer::instance().makelist(jmp());		//j9	
-					CodeBuffer::instance().bpatch($$.getFalseList(), CodeBuffer::instance().genLabel());  //TODO: the added line, for checking
+					//CodeBuffer::instance().bpatch($$.getFalseList(), CodeBuffer::instance().genLabel());  //TODO: the added line, for checking
 					
 					register_alloc->freeRegister($$.regist);
 					register_alloc->freeRegister(tmp_register);
