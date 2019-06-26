@@ -310,6 +310,7 @@ void retFromFunc(StackType stackType)
 
     //CodeBuffer::instance().emit("addu $sp, $sp, 8");
     register_alloc->removeUsedRegistersFromStack();
+
 }
 reg createString(string string1)
 {
@@ -353,35 +354,47 @@ reg callFunc(string func_name, StackType stackType)
         if(stackType.func_info[i].regist== noRegister)
         {
             addRegisterToFunc(stackType.func_info[i].regist);
-                // size+=4;
+            // size+=4;
         }
         else if(isImmediate(stackType.func_info[i].Id))
         {
             addImmToFunc(stackType.func_info[i].Id);
-                //size+=4;
+            //size+=4;
         }
         else if(variableEntry!=NULL)
         {
             addVarToFunc(stackType.func_info[i].Id);
-                //size+=4;
+            //size+=4;
         }
-            //size+=1;
+        //size+=1;
     }
 
     CodeBuffer::instance().emit("jal __" + func_name);
     reg register1 = noRegister;
     FunctionEntry* func_entry = scopes->getFunction(func_name);
     assert(func_entry != NULL);
+    /*
     ///This is fantastic. Bad Coding habits for the win!
     if(func_name != "printi"){
         pop();
     }
-        //stringstream ostream;
-        //ostream << "addu $sp, $sp, " << size;
-        //CodeBuffer::instance().emit(ostream.str());
+     */
+    ////I added this shit, to
+    for(int i=0;i<stackType.func_info.size();i++)
+    {
+        CodeBuffer::instance().emit("#### this is my shit");
+        //reg tmp=register_alloc->RegisterAlloc();
+        //popReg(tmp);
+        pop();
+    }
+    //// done ADDing this shit
+
+    //stringstream ostream;
+    //ostream << "addu $sp, $sp, " << size;
+    //CodeBuffer::instance().emit(ostream.str());
     ///This is supposed to handle return value
     if (func_entry->getType() != typeToString(VoidType)) {
-            // CodeBuffer::instance().emit("move " + reg_to_string(register1) + ", $v0");
+        // CodeBuffer::instance().emit("move " + reg_to_string(register1) + ", $v0");
         register1 = register_alloc->RegisterAlloc();
         mov(register1,$v0);
     }
