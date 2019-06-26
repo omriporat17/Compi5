@@ -159,6 +159,7 @@ void Registers::addUsedRegistersToStack()
     for(int i=0; i<REG_FILE_SIZE; i++)
     {
         if(allRegisters[i]){
+            allRegisters[i] = true;
             pushReg(intToReg(i));
         }
     }
@@ -177,6 +178,7 @@ void Registers::removeUsedRegistersFromStack()
     for(int i=0; i<REG_FILE_SIZE; i++)
     {
         if(allRegisters[i]){
+            allRegisters[i] = false;
             popReg(intToReg(i));
         }
     }
