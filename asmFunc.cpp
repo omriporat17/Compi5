@@ -21,6 +21,7 @@ int convert_to_byte(reg src)
 int add(reg dst, reg src1, reg src2)
 {
     std::ostringstream ostringstream1;
+    CodeBuffer::instance().emit("1");
     ostringstream1<< "addu "<< reg_to_string(dst) << ", "<<reg_to_string(src1) << ", "<<reg_to_string(src2);
     return CodeBuffer::instance().emit(ostringstream1.str());
 

@@ -175,10 +175,10 @@ void Registers::removeUsedRegistersFromStack()
     //  pushReg(iterator1.operator*());
 
     // }
-    for(int i=0; i<REG_FILE_SIZE; i++)
+    for(int i=REG_FILE_SIZE; i>-1; i--)
     {
         if(allRegisters[i]){
-            allRegisters[i] = false;
+            //allRegisters[i] = false;
             popReg(intToReg(i));
         }
     }
