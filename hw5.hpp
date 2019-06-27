@@ -48,6 +48,8 @@ void retFromFunc(StackType stackType);
 
 reg createString(string string1);
 
+string createPrecondString(string string1);
+
 reg callFunc(string func_name, StackType stackType);
 
 //void addRegToStack();

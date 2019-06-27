@@ -7,7 +7,7 @@
 int check_div_by_zero(reg src)
 {
     std::ostringstream ostringstream1;
-    ostringstream1 << "beq " << reg_to_string(src) << ", $zero zeroDiv";
+    ostringstream1 << "beq " << reg_to_string(src) << ", $zero DivisionByZero";
     return CodeBuffer::instance().emit(ostringstream1.str());
 }
 
@@ -21,7 +21,6 @@ int convert_to_byte(reg src)
 int add(reg dst, reg src1, reg src2)
 {
     std::ostringstream ostringstream1;
-    CodeBuffer::instance().emit("1");
     ostringstream1<< "addu "<< reg_to_string(dst) << ", "<<reg_to_string(src1) << ", "<<reg_to_string(src2);
     return CodeBuffer::instance().emit(ostringstream1.str());
 

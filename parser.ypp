@@ -84,10 +84,15 @@ Funcs: /*epsilon*/{}
 ;
 
 
-FuncDecl: FuncDeclFirst PreConditions FuncDeclSecond 
+FuncDecl: FuncDeclFirst M PreConditions M FuncDeclSecond 
 { 
 	scopes->popScope();
 	callReturnFunc(); 
+
+	CodeBuffer::instance().bpatch($1.getNextList(),$2.str); //jump to preconditon
+    CodeBuffer::instance().bpatch($3.getTrueList(),$4.str);
+    CodeBuffer::instance().bpatch($3.getFalseList(), $1.str); //jump to error label
+
 }
 ;
 
@@ -98,6 +103,12 @@ FuncDeclFirst: RetType ID LPAREN Formals RPAREN
 	$$.type = $1.type;
 	$$.lineNum = $1.lineNum;
 	defineFunc($2.str);
+
+	$$.getNextList()=CodeBuffer::instance().makelist(jmp());
+	string lbl=CodeBuffer::instance().genLabel();
+	string lbldata = createPrecondString("\""+$2.str+"\"");
+	CodeBuffer::instance().emit("la $t0, "+lbldata);
+	CodeBuffer::instance().emit("j PreConditionLabel");
 }
 ;
 
@@ -146,7 +157,13 @@ FormalDecl: Type ID {
 ;
 
 
-PreConditions: PreConditions PreCondition{}
+PreConditions: PreConditions M PreCondition{
+
+		CodeBuffer::instance().bpatch($1.getTrueList(),$2.str);
+		$$.getTrueList()=$3.getTrueList();
+		$$.getFalseList()=CodeBuffer::instance().merge($1.getFalseList(), $3.getFalseList());    
+		
+	}
 	| /*epsilon*/
 
 //TODO: FAQ about preconditions with vars or functions

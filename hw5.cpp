@@ -326,6 +326,19 @@ reg createString(string string1)
     CodeBuffer::instance().emit(ostringstream2.str());
     return register1;
 }
+
+string createPrecondString(string string1){
+    reg register1 = register_alloc->RegisterAlloc();
+    static int counter = 0;
+    ostringstream ostringstream1;
+    ostringstream1 << "precond_label" << counter++;
+    string label = ostringstream1.str();
+    string str_label = ostringstream1.str();
+    ostringstream1 << ": .asciiz " << string1;
+    CodeBuffer::instance().emitData(ostringstream1.str());
+    return label;
+}
+
 reg callFunc(string func_name, StackType stackType)
 {
     int size=0;
@@ -431,8 +444,12 @@ void startingText()
     CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
     CodeBuffer::instance().emit("syscall");
     emit_print_printi();
+    CodeBuffer::instance().emit("PreConditionLabel: la $a0, PrecondFail");
+    CodeBuffer::instance().emit("li $v0, 4");
+    CodeBuffer::instance().emit("syscall");
 
     CodeBuffer::instance().emitData("DivisionByZero: .asciiz \"Error division by zero\\n\"");
+    CodeBuffer::instance().emitData("PrecondFail: .asciiz \"Preconditon hasn't been satisfied for function \"");
     CodeBuffer::instance().emit("j ExitCode");
     CodeBuffer::instance().emit("TerminateZero: la $a0, DivisionByZero");
     CodeBuffer::instance().emit("li $v0, 4");
