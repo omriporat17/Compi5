@@ -432,6 +432,18 @@ void inline emit_print_printi(){
     CodeBuffer::instance().emit("syscall");
     CodeBuffer::instance().emit("jr $ra");
 }
+
+void inline emit_prcond_fail(){
+    CodeBuffer::instance().emit("PreConditionLabel: la $a0, PrecondFail");
+    CodeBuffer::instance().emit("li $v0, 4");
+    CodeBuffer::instance().emit("syscall");
+    CodeBuffer::instance().emit("li $v0, 4");
+    CodeBuffer::instance().emit("move $a0, $t0");
+    CodeBuffer::instance().emit("syscall");
+    CodeBuffer::instance().emit("j ExitCode");
+
+}
+
 void startingText()
 {
     CodeBuffer::instance().emit(".globl main");
@@ -444,13 +456,10 @@ void startingText()
     CodeBuffer::instance().emit("ExitCode: li $v0, 10 ");
     CodeBuffer::instance().emit("syscall");
     emit_print_printi();
-    CodeBuffer::instance().emit("PreConditionLabel: la $a0, PrecondFail");
-    CodeBuffer::instance().emit("li $v0, 4");
-    CodeBuffer::instance().emit("syscall");
+    emit_prcond_fail();
 
     CodeBuffer::instance().emitData("DivisionByZero: .asciiz \"Error division by zero\\n\"");
     CodeBuffer::instance().emitData("PrecondFail: .asciiz \"Preconditon hasn't been satisfied for function \"");
-    CodeBuffer::instance().emit("j ExitCode");
     CodeBuffer::instance().emit("TerminateZero: la $a0, DivisionByZero");
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("syscall");
