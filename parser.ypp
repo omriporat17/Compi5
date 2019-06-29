@@ -419,6 +419,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 		CodeBuffer::instance().bpatch($9.getNextList(), $4.str);
 		CodeBuffer::instance().bpatch($5.getTrueList(), $7.str);
 		$$.getNextList() = CodeBuffer::instance().merge($5.getFalseList(), $8.getBreakList());
+		CodeBuffer::instance().bpatch($$.getNextList(), $9.str);
 
 		register_alloc->freeRegister($5.regist);
 	}
@@ -438,7 +439,7 @@ Statement: StartScope LBRACE Statements RBRACE {
 		$$.getContinueList() = CodeBuffer::instance().makelist(jmp());
 	}
 ;
-IfScope: StartScope IF LPAREN Exp RPAREN M Statement {
+IfScope: StartScope IF LPAREN Exp RPAREN M Statement M {
 
 		scopes->popScope();
 		$$.lineNum = $2.lineNum;
@@ -454,6 +455,7 @@ IfScope: StartScope IF LPAREN Exp RPAREN M Statement {
     	$$.getBreakList() = $7.getBreakList();
     	$$.getContinueList() = $7.getContinueList();
 
+		CodeBuffer::instance().bpatch($$.getBreakList(), $8.str);
 		register_alloc->freeRegister($4.regist);
 	}
 ;

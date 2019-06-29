@@ -440,8 +440,9 @@ void inline emit_prcond_fail(){
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("move $a0, $t0");
     CodeBuffer::instance().emit("syscall");
+    CodeBuffer::instance().emit("li $v0, 4");
+    CodeBuffer::instance().emit("move $a0, LineBreak");
     CodeBuffer::instance().emit("j ExitCode");
-
 }
 
 void startingText()
@@ -459,7 +460,8 @@ void startingText()
     emit_prcond_fail();
 
     CodeBuffer::instance().emitData("DivisionByZero: .asciiz \"Error division by zero\\n\"");
-    CodeBuffer::instance().emitData("PrecondFail: .asciiz \"Preconditon hasn't been satisfied for function \"");
+    CodeBuffer::instance().emitData("PrecondFail: .asciiz \"Precondition hasn't been satisfied for function \"");
+    CodeBuffer::instance().emitData("LineBreak: \"\\n\"");
     CodeBuffer::instance().emit("TerminateZero: la $a0, DivisionByZero");
     CodeBuffer::instance().emit("li $v0, 4");
     CodeBuffer::instance().emit("syscall");
